@@ -27,32 +27,35 @@
         position: absolute;
         width: 600px;
         top: 50px;
-        right: 50px;
-        background-color: rgba(0,0,0,0.5);
+        right: 0px;
+        background-color: rgba(0,0,0,0.6);
 /*        border: 2px solid #E6EBF5; */
-        padding: 2px; 
-        border-radius: 10px;
-/*        box-shadow: 5px 5px 10px #B2C2E0; */
+        padding: 5px 50px;
+        border-bottom-left-radius: 6px;
+        border-top-left-radius: 6px;
+        box-shadow: 2px 7px 12px rgba(0,0,0,0.5);;
 /*        box-shadow: 0 5px 6px rgba(0,0,0,0.3), inset 0 -3px 3px rgba(0,0,0,0.3); */
       }
       #main h1 {
-        font-family: "Helvetica";
+        font-family: "Trebuchet MS", Helvetica, sans-serif;
         color: #DDDDDD;
         padding: 5px;
         margin: 5px;
-        text-align: right;
+        text-align: left;
       }
       #main p {
-        font-size: 18px;
-        font-family: "Helvetica";
+        font-size: 16px;
+        font-family: "Trebuchet MS", Helvetica, sans-serif;
         color: #DDDDDD;
         padding: 5px;
         margin: 3px;
-        text-align: right;
+        text-align: left;
+        word-spacing: 0.2em;
+        line-height: 115%;
       }
       #main img {
-        float: right;
-        padding: 10px;
+        float: left;
+        padding: 10px 20px 10px 10px;
       }
     /*  #headshot {
         position: relative;
@@ -60,20 +63,41 @@
       } */
       img.round {
         display: block;
-        border-radius: 200px;
+        border-radius: 50%;
       }
       #footer {
         position: absolute;
         bottom: 40px;
         width: 100%;
         background-color: rgba(0,0,0,0.6);
-        padding: 10px;
+        padding: 10px 0px; /* L&R padding must be 0 b/c width=100% */
       }
       #footer p {
         color: #DDDDDD;
         font-size: 16px;
-        font-family: "Helvetica";
-        margin: 3px;
+        font-family: "Trebuchet MS", Helvetica, sans-serif;
+        margin: 3px 25px;
+      }
+      #footer p.left {
+        position: relative;
+        left: 0px;
+        text-align: left;
+        float:left;
+      }
+      #footer p.right {
+        position: relative;
+        right: 0px;
+        text-align: right;
+        float: right;
+      }
+      a, a:link, a:visited {
+        color: #999999;
+        font-size: inherit;
+        font-family: inherit;
+        text-decoration: underline
+      }
+      a:hover {
+        text-decoration: none;
       }
     </style>
   </head>
@@ -84,7 +108,13 @@
       <p>I'm a freelance web developer based in New York. I'm currently participating in <a href="http://www.thisismetis.com">Metis</a>, a 3-month Ruby on Rails course led by <a href="http://www.thoughtbot.com">thoughtbot</a> developers. Also: amateur photographer, sometimes-chef, subway nerd.</p>
     </div>
     <div id="footer">
-      <p>Some links to contact me go here! Copyright &copy; 2014 Robert Eshleman</p>
+      <p class="left">Copyright &copy; 2014 Robert Eshleman</p>
+      <p class="right">
+      <a href="mailto:reshleman@me.com">Email</a>&nbsp;•&nbsp;
+      <a href="http://www.linkedin.com/in/roberteshleman/">LinkedIn</a>&nbsp;•&nbsp;
+      <a href="http://www.twitter.com/roberteshleman">Twitter</a>&nbsp;•&nbsp;
+      <a href="http://www.github.com/reshleman">GitHub</a>
+      </p>
     </div>
   </body>
 </html>
