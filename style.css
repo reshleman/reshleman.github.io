@@ -8,6 +8,11 @@ html {
 body {
   margin: 0px;
   padding: 0px;
+  color: #DDDDDD;
+  font-family: "Trebuchet MS", Helvetica, sans-serif;
+}
+p {
+  font-size: 16px;
 }
 #main {
   position: absolute;
@@ -18,7 +23,6 @@ body {
   border-bottom-left-radius: 6px;
   border-top-left-radius: 6px;
   box-shadow: 2px 7px 12px rgba(0,0,0,0.5);;
-  color: #DDDDDD;
   background-color: rgba(0,0,0,0.6);
   font-family: "Trebuchet MS", Helvetica, sans-serif;
   text-align: left;
@@ -28,7 +32,6 @@ body {
   margin: 5px;
 }
 #main p {
-  font-size: 16px;
   padding: 5px;
   margin: 3px;
   word-spacing: 0.2em;
@@ -50,9 +53,6 @@ img.round {
   padding: 10px 0px; /* L&R padding must be 0 b/c width=100% */
 }
 #footer p {
-  color: #DDDDDD;
-  font-size: 16px;
-  font-family: "Trebuchet MS", Helvetica, sans-serif;
   margin: 3px 25px;
 }
 #footer p.left {
@@ -68,10 +68,13 @@ img.round {
   float: right;
 }
 a, a:link, a:visited {
-  color: #999999;
+  color: #A0A0A0;
   font-size: inherit;
   font-family: inherit;
   text-decoration: underline
+}
+#footer a, #footer a:link, #footer a:visited {
+  color: #D9D9D9;
 }
 a:hover {
   text-decoration: none;
