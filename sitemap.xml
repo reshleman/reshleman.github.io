@@ -3,6 +3,12 @@
   
   
   <url>
+    <loc>http://reshleman.github.io/blog/2014/06/26/creating-a-basic-web-app-with-ruby-and-sinatra/</loc>
+    <lastmod>2014-06-26T12:45:25-04:00</lastmod>
+    <priority>0.8</priority>
+  </url>
+  
+  <url>
     <loc>http://reshleman.github.io/blog/2014/06/23/the-value-of-learning-object-oriented-design-in-ruby-dot-dot-dot-starting-from-day-1/</loc>
     <lastmod>2014-06-23T12:56:03-04:00</lastmod>
     <priority>0.8</priority>
@@ -11,14 +17,14 @@
   
   <url>
     <loc>http://reshleman.github.io/blog/archives/</loc>
-    <lastmod>2014-06-23T15:20:48-04:00</lastmod>
+    <lastmod>2014-06-26T12:47:39-04:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
     <loc>http://reshleman.github.io/</loc>
-    <lastmod>2014-06-23T15:20:48-04:00</lastmod>
+    <lastmod>2014-06-26T12:47:39-04:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
