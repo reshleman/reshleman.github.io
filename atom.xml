@@ -4,7 +4,7 @@
   <title><![CDATA[Robert Eshleman]]></title>
   <link href="http://reshleman.github.io/atom.xml" rel="self"/>
   <link href="http://reshleman.github.io/"/>
-  <updated>2014-06-26T12:47:39-04:00</updated>
+  <updated>2014-07-07T15:10:03-04:00</updated>
   <id>http://reshleman.github.io/</id>
   <author>
     <name><![CDATA[Robert Eshleman]]></name>
@@ -12,6 +12,206 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Models, Views, and Controllers, Oh My!: Anatomy of a Rails App]]></title>
+    <link href="http://reshleman.github.io/blog/2014/07/07/models-views-and-controllers-oh-my-anatomy-of-a-rails-app/"/>
+    <updated>2014-07-07T14:14:17-04:00</updated>
+    <id>http://reshleman.github.io/blog/2014/07/07/models-views-and-controllers-oh-my-anatomy-of-a-rails-app</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is the first in a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>With <a href="http://www.youtube.com/watch?v=NecK4MwOfeI">apologies to the late Judy Garland</a>, let&rsquo;s start out by acknowledging that the <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">Model-View-Controller architecture</a> isn&rsquo;t nearly as frightening as lions, tigers, or bears. After all, we <em>are</em> wearing our Ruby slippers.</p>
+
+<p>*<em>crickets</em>*</p>
+
+<p>Anyway, bad jokes aside, this way of organizing an application <em>can</em> seem intimidating to the uninitiated. In this post, we’ll take a look at what MVC means, and what this architecture looks like in a Rails application.</p>
+
+<h2>Overview</h2>
+
+<p>At a high level, the Model-View-Controller architecture allows us to isolate logic into different categories (and files), based on that code’s role in a program. This standard structure also makes it easier to read through existing code, because you know where to find specific logic based on what it does.</p>
+
+<p>We’ll start with some basic definitions:</p>
+
+<ul>
+<li><strong>Models</strong> contain the <em>business logic</em> — this is the code that maps the real-world problem space to its representation in the computer.</li>
+<li><strong>Views</strong> contain <em>presentation logic</em> — or the code that determines how data will be displayed to the user.</li>
+<li><strong>Controllers</strong> contain <em>control logic</em> — the connective tissue that makes models and views work together.</li>
+</ul>
+
+
+<p>Let&rsquo;s explore these components in more detail.</p>
+
+<h2>Models</h2>
+
+<p>A model contains all of the code that matches the behavior and state of a real-world entity. This is what we call the &ldquo;business logic&rdquo; — code that is motivated by the the actual &ldquo;things&rdquo; we&rsquo;re modeling.</p>
+
+<p>When matching our business logic to the problem space, we follow a convention called “Fat Models, Skinny Controllers.” This means that controllers should not contain any logic related to modeling the real world — that’s solely the job of the models. Instead, controllers should only contain the basic code required to construct and send a response to the user.</p>
+
+<p>Often, but not always, models will correspond to an entity that we want to persist in the database. For these models, we use an <a href="http://en.wikipedia.org/wiki/Object-relational_mapping">object-relational mapping</a> (or ORM), which matches database fields to data stored in Ruby objects. This type of mapping provides methods that allow us to easily persist our objects in the database.</p>
+
+<p>In Rails, models are stored in the <code>app/models/</code> directory, and named in the singular form, like <code>gallery.rb</code>. ORM model classes inherit functionality from <code>ActiveRecord::Base</code>.</p>
+
+<h2>Views</h2>
+
+<p>Views contain all of the code that is required to display information to the user. In Rails, these files often take the form of an HTML file with embedded Ruby:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='erb'><span class='line'><span class="x">&lt;h1&gt;</span><span class="cp">&lt;%=</span> <span class="vi">@user</span><span class="o">.</span><span class="n">name</span> <span class="cp">%&gt;</span><span class="x">&lt;/h1&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>These <code>.html.erb</code> files are stored in a <code>app/views/</code> inside a subdirectory that matches the pluralized model name. So the “index” view for an “image” model would be located at <code>app/views/images/index.html.erb</code>.</p>
+
+<h3>Layouts</h3>
+
+<p>Rails also uses layouts that can contain the boilerplate HTML code used for every page. This default file is located at <code>app/views/layouts/application.html.erb</code>, and all other views are rendered where the <code>&lt;%= yield %&gt;</code> call appears in the layout.</p>
+
+<h3>Guidelines for Views</h3>
+
+<p>The Ruby logic in views should be somewhat simple and restricted as much as possible to presenting information. There are a few guidelines here:</p>
+
+<ul>
+<li><strong>Don’t</strong> assign variables</li>
+<li><strong>Don’t</strong> define classes</li>
+<li><strong>Don’t</strong> define methods</li>
+<li><strong>Don’t</strong> define constants</li>
+<li><strong>Avoid</strong> complex conditionals (<code>if</code>, <code>case</code>, etc.)</li>
+<li><strong>Avoid</strong> complex method calls</li>
+</ul>
+
+
+<h2>Controllers</h2>
+
+<p>The best analogy I’ve heard for how controllers work is a comparison to an old-school (read: before my time) <a href="http://en.wikipedia.org/wiki/Telephone_switchboard">telephone switchboard</a> operator. When a caller needs to reach another person, they place their request with the switchboard operator, who connects the right cables so the call can be completed.</p>
+
+<p>Controllers in Rails work similarly. When a user submits a request to a Rails application, that request it is <strong>routed</strong> to a specific <strong>action</strong> method within a controller. (More on these in a moment.) This method contains logic that collects information (often — but not necessarily — using a model) and passes that data to a view. Finally, the controller sends the rendered view to the user.</p>
+
+<p>Each request sent to the server will only be handled by a single action within a single controller.</p>
+
+<h3>Routes</h3>
+
+<p>Routes are not technically part of the MVC architecture, but they play a key role in how controllers work. A route defines a path that the user can use to interact with an application. Rails defines routes in the <code>config/routes.rb</code> file, using the following syntax:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">verb</span> <span class="s2">&quot;/route&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;controller#action&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In this syntax:</p>
+
+<ul>
+<li><code>verb</code> represents one of the <a href="http://www.restapitutorial.com/lessons/httpmethods.html">HTTP verbs</a></li>
+<li><code>"/route"</code> is the URL path, relative to the application root, like <code>/gallery/1/image/45</code></li>
+<li><code>controller</code> is the name of a specific controller</li>
+<li>and <code>action</code> is the name of a specific action method within that controller</li>
+</ul>
+
+
+<h3>Actions</h3>
+
+<p>An action is a method in a controller that a route points to. When called, an action gathers the data necessary to render a view, and then returns a rendered view to the user.</p>
+
+<p>In Rails, the convention is to use only these <a href="http://guides.rubyonrails.org/routing.html#crud-verbs-and-actions">seven actions</a>, which represent the standard ways of interacting with a resource:</p>
+
+<ul>
+<li>Index — display some or all resources of that type</li>
+<li>Show — display a single resource</li>
+<li>New — display a form for creating a new resource</li>
+<li>Create — actually create that resource</li>
+<li>Edit — display a form for changing a resource</li>
+<li>Update — actually change that resource</li>
+<li>Destroy — delete a resource</li>
+</ul>
+
+
+<p>Rails even provides an easy, standard way to define routes to all of these resources in <code>config/routes.rb</code>. For a sample photo gallery application, this might look like:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">resources</span> <span class="ss">:galleries</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This provides the following routes (table adapted from the Rails <a href="http://guides.rubyonrails.org/routing.html#crud-verbs-and-actions">Routing Guide</a>):</p>
+
+<table>
+<thead>
+<tr>
+<th><strong>HTTP Verb</strong> </th>
+<th> <strong>Path</strong> </th>
+<th> <strong>Controller#Action</strong> </th>
+<th> <strong>Used for</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET </td>
+<td> /galleries </td>
+<td> galleries#index </td>
+<td> display a list of all galleries</td>
+</tr>
+<tr>
+<td>GET </td>
+<td> /galleries/new </td>
+<td> galleries#new </td>
+<td> display a form for creating a new gallery</td>
+</tr>
+<tr>
+<td>POST </td>
+<td> /galleries </td>
+<td> galleries#create </td>
+<td> create a new gallery</td>
+</tr>
+<tr>
+<td>GET </td>
+<td> /galleries/:id </td>
+<td> galleries#show </td>
+<td> display a specific gallery</td>
+</tr>
+<tr>
+<td>GET </td>
+<td> /galleries/:id/edit </td>
+<td> galleries#edit </td>
+<td> display a form for editing a gallery</td>
+</tr>
+<tr>
+<td>PATCH/PUT </td>
+<td> /galleries/:id </td>
+<td> galleries#update </td>
+<td> update a specific gallery</td>
+</tr>
+<tr>
+<td>DELETE </td>
+<td> /galleries/:id </td>
+<td> galleries#destroy </td>
+<td> delete a specific gallery</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>You can also use the <code>resources</code> method to quickly define a subset of these routes:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Only</span>
+</span><span class='line'><span class="n">resources</span> <span class="ss">:galleries</span><span class="p">,</span> <span class="ss">only</span><span class="p">:</span> <span class="o">[</span><span class="ss">:index</span><span class="p">,</span> <span class="ss">:show</span><span class="o">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># Except</span>
+</span><span class='line'><span class="n">resources</span> <span class="ss">:galleries</span><span class="p">,</span> <span class="ss">except</span><span class="p">:</span> <span class="o">[</span><span class="ss">:edit</span><span class="p">,</span> <span class="ss">:update</span><span class="p">,</span> <span class="ss">:destroy</span><span class="o">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Further Reading</h2>
+
+<p>The <a href="http://guides.rubyonrails.org/">Rails Guides</a> contain a ton of additional information about how MVC is implemented in Rails, including API references, usage, and code examples. There are specific pages covering <a href="http://guides.rubyonrails.org/active_record_basics.html">models</a>, <a href="http://guides.rubyonrails.org/layouts_and_rendering.html">views</a>, <a href="http://guides.rubyonrails.org/action_controller_overview.html">controllers</a>, and <a href="http://guides.rubyonrails.org/routing.html">routing</a>. The <a href="http://api.rubyonrails.org/">Rails API</a> is also helpful for more precise information about available methods.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Creating a Basic Web App with Ruby and Sinatra]]></title>
