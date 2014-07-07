@@ -4,7 +4,7 @@
   <title><![CDATA[Category: tech | Robert Eshleman]]></title>
   <link href="http://reshleman.github.io/blog/categories/tech/atom.xml" rel="self"/>
   <link href="http://reshleman.github.io/"/>
-  <updated>2014-07-07T15:10:03-04:00</updated>
+  <updated>2014-07-07T15:10:58-04:00</updated>
   <id>http://reshleman.github.io/</id>
   <author>
     <name><![CDATA[Robert Eshleman]]></name>
@@ -25,6 +25,9 @@
 <p>*<em>crickets</em>*</p>
 
 <p>Anyway, bad jokes aside, this way of organizing an application <em>can</em> seem intimidating to the uninitiated. In this post, we’ll take a look at what MVC means, and what this architecture looks like in a Rails application.</p>
+
+<!-- More -->
+
 
 <h2>Overview</h2>
 
