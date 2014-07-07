@@ -6,7 +6,7 @@ comments: true
 categories: ["Rails", "Tech", "MVC", "Metis", "Ruby"]
 ---
 
-*This summer, I'm learning Ruby on Rails at [Metis](http://www.thisismetis.com), a 12-week class taught by some great folks from [thoughtbot](http://www.thoughtbot.com). This post is the first in a series sharing my experience and some of the things I'm learning.*
+*This summer, I'm learning Ruby on Rails at [Metis](http://www.thisismetis.com), a 12-week class taught by some great folks from [thoughtbot](http://www.thoughtbot.com). This post is part of a series sharing my experience and some of the things I'm learning.*
 
 With [apologies to the late Judy Garland](http://www.youtube.com/watch?v=NecK4MwOfeI), let's start out by acknowledging that the [Model-View-Controller architecture](http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) isn't nearly as frightening as lions, tigers, or bears. After all, we *are* wearing our Ruby slippers.
 
