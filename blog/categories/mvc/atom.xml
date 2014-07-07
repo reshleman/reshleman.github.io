@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: mvc | Robert Eshleman]]></title>
+  <title><![CDATA[Category: Mvc | Robert Eshleman]]></title>
   <link href="http://reshleman.github.io/blog/categories/mvc/atom.xml" rel="self"/>
   <link href="http://reshleman.github.io/"/>
-  <updated>2014-07-07T15:10:58-04:00</updated>
+  <updated>2014-07-07T19:34:14-04:00</updated>
   <id>http://reshleman.github.io/</id>
   <author>
     <name><![CDATA[Robert Eshleman]]></name>
@@ -18,7 +18,7 @@
     <link href="http://reshleman.github.io/blog/2014/07/07/models-views-and-controllers-oh-my-anatomy-of-a-rails-app/"/>
     <updated>2014-07-07T14:14:17-04:00</updated>
     <id>http://reshleman.github.io/blog/2014/07/07/models-views-and-controllers-oh-my-anatomy-of-a-rails-app</id>
-    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is the first in a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
 
 <p>With <a href="http://www.youtube.com/watch?v=NecK4MwOfeI">apologies to the late Judy Garland</a>, let&rsquo;s start out by acknowledging that the <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">Model-View-Controller architecture</a> isn&rsquo;t nearly as frightening as lions, tigers, or bears. After all, we <em>are</em> wearing our Ruby slippers.</p>
 

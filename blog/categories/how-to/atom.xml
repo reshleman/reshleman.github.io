@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: how-to | Robert Eshleman]]></title>
+  <title><![CDATA[Category: How-to | Robert Eshleman]]></title>
   <link href="http://reshleman.github.io/blog/categories/how-to/atom.xml" rel="self"/>
   <link href="http://reshleman.github.io/"/>
-  <updated>2014-07-07T15:10:58-04:00</updated>
+  <updated>2014-07-07T19:34:14-04:00</updated>
   <id>http://reshleman.github.io/</id>
   <author>
     <name><![CDATA[Robert Eshleman]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Creating a Basic Web App with Ruby and Sinatra]]></title>
+    <title type="html"><![CDATA[Creating a Basic Web App With Ruby and Sinatra]]></title>
     <link href="http://reshleman.github.io/blog/2014/06/26/creating-a-basic-web-app-with-ruby-and-sinatra/"/>
     <updated>2014-06-26T12:45:25-04:00</updated>
     <id>http://reshleman.github.io/blog/2014/06/26/creating-a-basic-web-app-with-ruby-and-sinatra</id>
