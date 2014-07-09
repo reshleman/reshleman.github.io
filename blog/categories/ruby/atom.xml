@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Ruby | Robert Eshleman]]></title>
   <link href="http://reshleman.github.io/blog/categories/ruby/atom.xml" rel="self"/>
   <link href="http://reshleman.github.io/"/>
-  <updated>2014-07-07T19:34:14-04:00</updated>
+  <updated>2014-07-09T13:16:06-04:00</updated>
   <id>http://reshleman.github.io/</id>
   <author>
     <name><![CDATA[Robert Eshleman]]></name>
@@ -12,6 +12,82 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Learning Rails via Error-Driven Development]]></title>
+    <link href="http://reshleman.github.io/blog/2014/07/09/learning-rails-via-error-driven-development/"/>
+    <updated>2014-07-09T13:10:52-04:00</updated>
+    <id>http://reshleman.github.io/blog/2014/07/09/learning-rails-via-error-driven-development</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>As we&rsquo;ve started learning Rails the past two weeks, one of our instructors, <a href="https://twitter.com/halogenandtoast">Goose</a>, has been encouraging us to code using an approach he calls <strong><a href="http://www.halogenandtoast.com/error-driven-development/">Error-Driven Development</a></strong>.</p>
+
+<p>Much like its older cousin, <strong><a href="http://en.wikipedia.org/wiki/Test-driven_development">Test-Driven Development</a></strong>, an error-driven approach follows a short, incremental, feedback-driven cycle when coding. As a new Rails developer, the habits built through Error-Driven Development will help prepare me to learn Test-Driven Development in the future.</p>
+
+<!-- More -->
+
+
+<h2>What is Error-Driven Development?</h2>
+
+<p>To develop a feature using Error-Driven Development, we first cause Rails to generate an error. Then, we make the simplest possible change to the code in order to resolve the error. This, in turn, will raise another error, and we can iterate by solving these incremental errors until our feature is complete.</p>
+
+<h2>An Example</h2>
+
+<p>At Metis, we&rsquo;ve been building a sample photo gallery app, so we&rsquo;ll walk through what Error-Driven Development might look like for getting our first page working with some boilerplate text.</p>
+
+<p>(These instructions are working from a vanilla Rails app generated with <code>rails new your-app-name-here</code>.)</p>
+
+<p>To start, we need to raise an error, so we&rsquo;ll navigate to the <code>/galleries</code> path (which will eventually be our first page) in the browser. Rails helpfully tells us:</p>
+
+<blockquote><p>Routing Error: No route matches [GET] &ldquo;/galleries&rdquo;</p></blockquote>
+
+<p>Of course, this seems silly, because we knew there was no route defined. But this message also tells us that we&rsquo;ve created the Rails project correctly and that the server is working.</p>
+
+<p>Now that we have an error, our next step is to make the smallest change to the code that fixes the error. We can do this by adding a single line to <code>config/routes.rb</code>:</p>
+
+<p><code>ruby
+resources :galleries, only: [:index]
+</code></p>
+
+<p>That&rsquo;s it. One line of code to fix this error. When we refresh the page, Rails says:</p>
+
+<blockquote><p>Routing Error: uninitialized constant GalleriesController</p></blockquote>
+
+<p>Great. We&rsquo;re making progress. To solve this error, we create the <code>app/controllers/galleries_controller.rb</code> file and add this code to define the controller:</p>
+
+<p><code>ruby
+class GalleriesController &lt; ApplicationController
+end
+</code></p>
+
+<p>Notice that we haven&rsquo;t yet defined any actions for this controller. After refreshing, Rails cheerfully greets us with:</p>
+
+<blockquote><p>Unknown action: The action &lsquo;index&rsquo; could not be found for GalleriesController</p></blockquote>
+
+<p>We correct this by defining the <code>index</code> action in the galleries controller:</p>
+
+<p><code>ruby
+def index
+end
+</code></p>
+
+<p>Refreshing again, we expect Rails to complain about a missing view. And we see (shortened for clarity):</p>
+
+<blockquote><p>Template is missing: Missing template galleries/index</p></blockquote>
+
+<p>So we create <code>app/views/galleries/index.html.erb</code> and add some boilerplate “Hello, world!” text to see that it&rsquo;s working. In the browser, we finally see:</p>
+
+<blockquote><p>Hello, world!</p></blockquote>
+
+<h2>Advantages and Reflections</h2>
+
+<p>One advantage of using this technique to learn Rails is that it makes apparent how Rails processes a request. For me, as a programmer who is new to Rails, this helps clarify a lot of the framework&rsquo;s conventions that aren&rsquo;t necessarily transparent (like which class names are pluralized, capitalized, etc.).</p>
+
+<p>Additionally, as I&rsquo;ve begun to get more comfortable with Rails, I can begin to anticipate what error I&rsquo;ll receive as I make each change to my code. If a different error appears, it&rsquo;s usually a sign that I made the wrong change or mistyped something. These mistakes are much easier to find when I&rsquo;ve only changed a few lines of code; had I made multiple changes at the same time, finding that error could take longer than coding did.</p>
+
+<p>In just a couple of weeks, using Error-Driven Development has completely changed the way I code. I&rsquo;m programming in a more logical, incremental way, and I&rsquo;m paying closer attention to my error messages. I can already see how learning Rails with an error-driven approach will provide a natural transition to using Test-Driven Development as I continue to grow as a developer.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Models, Views, and Controllers, Oh My!: Anatomy of a Rails App]]></title>
