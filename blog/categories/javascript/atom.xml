@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Javascript | Robert Eshleman]]></title>
+  <link href="http://reshleman.github.io/blog/categories/javascript/atom.xml" rel="self"/>
+  <link href="http://reshleman.github.io/"/>
+  <updated>2014-07-31T16:04:09-04:00</updated>
+  <id>http://reshleman.github.io/</id>
+  <author>
+    <name><![CDATA[Robert Eshleman]]></name>
+    <email><![CDATA[reshleman@me.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[AJAX: It's Better With Rails]]></title>
+    <link href="http://reshleman.github.io/blog/2014/07/31/ajax-its-better-with-rails/"/>
+    <updated>2014-07-31T15:59:11-04:00</updated>
+    <id>http://reshleman.github.io/blog/2014/07/31/ajax-its-better-with-rails</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>Most people love the responsive experience of using <a href="http://en.wikipedia.org/wiki/Ajax_%28programming%29">AJAX</a>-y web pages. <em>Creating</em> that functionality, on the other hand, is not always so enjoyable: asynchronous requests can be difficult to code and debug.</p>
+
+<p>It may not be a surprise that Rails helps us abstract some of the more challenging AJAX code. In this post, we&rsquo;ll take a look at a basic AJAX request constructed with vanilla jQuery; then, we&rsquo;ll check out the tools Rails gives us to create and respond to asynchronous requests.</p>
+
+<!--More-->
+
+
+<h2>The Hard Way</h2>
+
+<p>The <a href="http://jquery.com/">jQuery library</a> allows us to construct AJAX requests ourselves. If we were to do this for a form submission to create a new task in a todo-list app, it might look something like this:</p>
+
+<p>```js
+$(function() {
+  $(&ldquo;#form_id&rdquo;).submit(function() {</p>
+
+<pre><code>$.post(
+  "/tasks",
+  { task: 
+    { title: 
+      $("#task_title").val()
+    }
+  },
+  function(data) {
+    $("#tasks").prepend(data)
+  }
+);
+return false;
+</code></pre>
+
+<p>  });
+});
+```</p>
+
+<p>The outer function call (<code>$(function() { ... });</code>) tells jQuery that the code inside is to be executed once the <a href="http://api.jquery.com/ready/">document is ready</a> (i.e., after the entire DOM loads).</p>
+
+<p>Then, we tell the browser to <a href="http://api.jquery.com/submit/">bind a function to the submit event</a> for our form, by calling <code>$("#form_id").submit(function() { ... });</code>. This tells the browser that the enclosed JavaScript function should be executed when the form is submitted.</p>
+
+<p>Within that function we have two statements: the first one (<code>$.post( ... );</code>) <a href="http://api.jquery.com/jQuery.post/">creates a POST request via AJAX</a>; the second (<code>return false;</code>) tells the browser not to execute the default action for the submitted form, which, in this case, would cause the page to reload.</p>
+
+<p>Our actual AJAX request has three parameters: the route &ldquo;/tasks&rdquo;, which we send the request to, the data we&rsquo;re sending (an object), and a callback function that runs if the request is successful. Our callback function simply <a href="http://api.jquery.com/prepend/">prepends</a> the <code>data</code> (in this case, HTML) returned by the server to the DOM element with the id of <code>tasks</code>.</p>
+
+<p>Phew.</p>
+
+<h2>The Rails Way</h2>
+
+<p>Fortunately, Rails can take care of a lot of this code for us. If we&rsquo;re using <code>form_for</code> or <code>link_to</code> in our view, we can specify the argument <code>remote: true</code> to cause Rails to <a href="http://edgeguides.rubyonrails.org/working_with_javascript_in_rails.html#built-in-helpers">automatically submit the form</a> (or load the link) via an AJAX request. We don&rsquo;t have to write any of the JavaScript to send the request!</p>
+
+<p>We will have to write the JavaScript we want the browser to execute when we receive the response, but Rails sends that JavaScript as the response to the AJAX request. We&rsquo;ll need to take a look at our Controller for that.</p>
+
+<h2>XHR in Controllers</h2>
+
+<p>One neat thing about Rails is that we can use the same controller and action for a standard HTTP request and for an asynchronous request, simply by telling Rails what kind of requests to respond to.</p>
+
+<p>In our controller, we use a <a href="http://api.rubyonrails.org/classes/ActionController/MimeResponds.html#method-i-respond_to"><code>respond_to</code></a> block to list the different formats:</p>
+
+<p>```rb
+def create
+  # Do some stuff to create a task
+  respond_to do |format|</p>
+
+<pre><code>format.html { redirect_to tasks_path }
+format.js   { }
+</code></pre>
+
+<p>   end
+end
+```</p>
+
+<p>This code tells Rails to respond to either a request for an HTML response or a request for a JavaScript response. If the browser is asking for an HTML response, we just redirect to the given path; if the browser is expecting a JavaScript response (it does when we use <code>remote: true</code> on our form), then we render the default view for this controller, action, and response format. In this case, that would be <code>app/views/tasks/create.js.erb</code></p>
+
+<h2>.js.erb Views</h2>
+
+<p>In that view, we can include any JavaScript we want, <strong>and the browser will automatically execute that JavaScript</strong> when it receives the response. This basically becomes our callback function, and, because it&rsquo;s a view, we can render partials in it.</p>
+
+<p>Our <code>.js.erb</code> file for this example might look like:</p>
+
+<p><code>js
+$("#tasks").prepend("&lt;%=j render @task %&gt;");
+$("#task_title").val("");
+</code></p>
+
+<p>This JavaScript prepends the rendered task to the DOM element with the id <code>tasks</code>, and clears our form field. Note that we use special ERB tags (<code>&lt;%=j ... %&gt;</code>) to escape our rendered data so that it can be safely included in a JavaScript string.</p>
+
+<h2>Resources</h2>
+
+<p>That&rsquo;s a quick overview of some of the most basic things you can do with Rails and JavaScript. There are plenty of resources on the web with more information about <a href="http://it-ebooks.info/book/274/">JavaScript</a>, <a href="http://api.jquery.com/">jQuery</a>, <a href="http://coffeescript.org/">CoffeeScript</a> (a language that compiles to JavaScript), and <a href="http://edgeguides.rubyonrails.org/working_with_javascript_in_rails.html">how Rails works with these</a>. Here are a few:</p>
+
+<ul>
+<li><a href="http://edgeguides.rubyonrails.org/working_with_javascript_in_rails.html">Rails Guide on AJAX</a></li>
+<li><a href="http://it-ebooks.info/book/274/">JavaScript: The Good Parts (ebook)</a></li>
+<li><a href="http://api.jquery.com/">jQuery API</a></li>
+<li><a href="http://coffeescript.org/">CoffeeScript</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>
