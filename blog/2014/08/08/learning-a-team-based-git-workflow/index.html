@@ -1,0 +1,386 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Learning a Team-Based Git Workflow - Robert Eshleman</title>
+  <meta name="author" content="Robert Eshleman">
+
+  
+  <meta name="description" content="This summer, I&rsquo;m learning Ruby on Rails at Metis, a 12-week class taught by some great folks from thoughtbot. This post is part of a series &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://reshleman.github.io/blog/2014/08/08/learning-a-team-based-git-workflow">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Robert Eshleman" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href='//fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<link href='//fonts.googleapis.com/css?family=Fjalla+One' rel='stylesheet' type='text/css'>
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-52127893-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'stats.g.doubleclick.net/dc.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   class="collapse-sidebar sidebar-footer" >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Robert Eshleman</a></h1>
+  
+    <h2>web developer in New York</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+<ul class="subscription">
+  <li><a href="mailto:reshleman@me.com" rel="email" title="Email Me">Email</a></li>
+</ul>
+  
+  
+<ul class="subscription">
+  <li><a href="https://linkedin.com/in/roberteshleman" rel="website-linkedin" title="LinkedIn Profile">LinkedIn</a></li>
+</ul>
+  
+  
+<ul class="subscription">
+  <li><a href="https://github.com/reshleman" rel="website-github" title="GitHub Profile">GitHub</a></li>
+</ul>
+  
+  
+<ul class="subscription">
+  <li><a href="https://twitter.com/RobertEshleman" rel="website-twitter" title="Twitter Feed">Twitter</a></li>
+</ul>
+  
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Learning a Team-Based Git Workflow</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-08T14:37:09-04:00" pubdate data-updated="true">Aug 8<sup>th</sup>, 2014</time>
+        
+           | <a href="#disqus_thread"
+             data-disqus-identifier="http://reshleman.github.io">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>At Metis this week, we&rsquo;ve transitioned from learning in a classroom environment to collaborating with a team on our first projects. Among the challenges we&rsquo;ve encountered, mastering a <a href="http://en.wikipedia.org/wiki/Git_%28software%29">Git</a> workflow stands out as one of the most useful — but also intimidating — skills to learn.</p>
+
+<!-- More -->
+
+
+<h2>Working in Feature Branches</h2>
+
+<p>In the past, when I&rsquo;ve used Git for personal projects without collaborators, I&rsquo;ve just written, committed, and pushed code on the <code>master</code> branch without any problems. Working with a team, though, <code>master</code> must be reserved for the <em>master</em> version of the code — the most up-to-date, final, and (hopefully) working version.</p>
+
+<p>Changes that any team member is working on should be made in a separate Git feature branch, which protects <code>master</code> from unintentional changes. The convention we&rsquo;ve used is to name a branch with your initials and a short description of the feature you&rsquo;re writing, like this: <code>re-sign-in-users</code>. This helps other developers identify who the owner of the branch is, and keeps your branches small by ensuring your work is directly related to that feature.</p>
+
+<p>To make a new branch, we first checkout <code>master</code>:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git checkout master</span></code></pre></td></tr></table></div></figure>
+
+
+<p>It&rsquo;s also a good practice to ensure your <code>master</code> branch is up to date with the remote repository by pulling down any changes to master that have been merged in by another developer:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git pull origin master</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Then, we can checkout our new feature branch:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git checkout -b re-sign-in-users</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Code Reviews on GitHub</h2>
+
+<p>Now that we&rsquo;re on a new branch, we can add, change, and delete code without worrying about modifying <code>master</code>. Let&rsquo;s say we work on our feature, add a few commits, and we think our code is ready to ship. Before we merge our feature into <code>master</code>, we want our teammates to review our code, and <a href="https://github.com">GitHub</a> gives us a great tool for that: <a href="https://help.github.com/articles/using-pull-requests">pull requests</a>.</p>
+
+<p>First, let&rsquo;s push our code to GitHub. From our local branch, we run:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git push origin re-sign-in-users</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This creates the branch on GitHub if it doesn&rsquo;t exist, and pushes the local branch up to it. GitHub will usually recognize your new branch immediately (AJAX magic!), and you&rsquo;ll see a green &ldquo;Compare &amp; pull request&rdquo; button. GitHub gives you space to add a title and any notes for your team to understand the changes you&rsquo;ve made. I also like to review my own changes one last time to ensure everything looks correct before clicking &ldquo;Create pull request.&rdquo;</p>
+
+<p>Once the PR has been created, our team can review the code and make comments directly in the PR. I&rsquo;ve found this guide on <a href="https://gist.github.com/gabebw/39adacfb03c7308644de">how to read a pull request</a> (written by <a href="http://www.thisismetis.com">Metis</a> instructor <a href="http://gabebw.com/">Gabe Berke-Williams</a>) to be incredibly helpful when reading my teammates&#8217; PRs.</p>
+
+<h2>Rebase and Merge</h2>
+
+<p>After your teammates have approved the code, it&rsquo;s time to merge it. There are several approaches to incorporating code from a feature branch into <code>master</code>; we&rsquo;ve been using a workflow that involves <strong>rebasing</strong>.</p>
+
+<p>Until I understood what it really meant, &ldquo;rebase&rdquo; was a frightening word to me. It shouldn&rsquo;t be. In our case, <a href="https://www.atlassian.com/git/tutorial/rewriting-git-history#!rebase">rebasing</a> involves making our changes be <em>based</em> off of the newest commit on <code>master</code>, instead of an older commit from when the feature branch was initially created. This allow us to incorporate any changes that our teammates have made and merged into <code>master</code> since we started writing our feature.</p>
+
+<p>An additional benefit to rebasing is that it allows us to <em>squash</em> our commits, or make multiple discrete commits become one cohesive commit. This keeps our commit history on <code>master</code> clean, because each feature branch becomes only a commit or two, regardless of how many individual commits you made while developing the feature.</p>
+
+<p>There are a few steps here, but the process becomes much easier with practice.</p>
+
+<p>We want to start by making sure our local <code>master</code> branch has the most up-to-date changes from the remote repo:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git checkout master
+</span><span class='line'>git pull origin master</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Then, we can rebase our branch on master:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git checkout re-sign-in-users
+</span><span class='line'>git rebase -i master</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The <code>-i</code> flag on <code>rebase</code> triggers an <code>interactive</code> rebase, opening a text editor with a list of the commits from the branch. This is where we have the option of squashing our commits. I won&rsquo;t go into too much detail here, but GitHub has a great <a href="https://help.github.com/articles/using-git-rebase">rebase tutorial</a> about the interactive rebase process.</p>
+
+<p>There&rsquo;s also a possibility that we&rsquo;ll have to resolve merge conflicts if our branch has changes that conflict with <code>master</code>. <a href="https://help.github.com/articles/resolving-a-merge-conflict-from-the-command-line">Resolving merge conflicts</a> during a rebase is the same as during a normal merge, and again GitHub has a great guide explaining this process.</p>
+
+<p>Once our rebase is done, we can merge our changes into <code>master</code> and push them up to GitHub. Because we&rsquo;ve done the hard work in the rebase, the merge itself is easy:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git checkout master
+</span><span class='line'>git merge re-sign-in-users
+</span><span class='line'>git push origin master</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Clean Up after Yourself</h2>
+
+<p>After we&rsquo;ve merged our feature branch into <code>master</code>, we should clean up after ourselves. It&rsquo;s a good practice to remove unused branches from the repository — they&rsquo;re just clutter and it they can make it unclear which branches are actively being used. Fortunately, this step is pretty easy.</p>
+
+<p>From the command line, we delete our local feature branch:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git branch -d re-sign-in-users</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We can also delete our remote GitHub branch using the command line:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git push origin :re-sign-in-users</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Note the colon before the feature branch name. This syntax allows us to specify which local branch to push from, and which remote branch to push to. In this case, we&rsquo;re pushing a local branch of nothing (before the colon) to the remote branch <code>re-feature-branch</code>. Pushing &ldquo;nothing&rdquo; tells Git to delete the remote branch.</p>
+
+<p>GitHub will kindly close the pull request for you when the remote branch is deleted. Neat!</p>
+
+<h2>Resources</h2>
+
+<p>Here&rsquo;s a quick summary of a few of the most helpful resources I&rsquo;ve found on these topics:</p>
+
+<ul>
+<li><a href="https://help.github.com/articles/using-pull-requests">Overview of pull requests</a></li>
+<li><a href="https://gist.github.com/gabebw/39adacfb03c7308644de">Reading a pull request</a></li>
+<li><a href="https://www.atlassian.com/git/tutorial/rewriting-git-history#!rebase">Overview of rebasing</a></li>
+<li><a href="https://help.github.com/articles/using-git-rebase">GitHub rebasing tutorial</a></li>
+<li><a href="https://help.github.com/articles/resolving-a-merge-conflict-from-the-command-line">GitHub article on resolving merge conflicts</a></li>
+</ul>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Authored by <span class="fn">Robert Eshleman</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-08-08T14:37:09-04:00" pubdate data-updated="true">Aug 8<sup>th</sup>, 2014</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/agile/'>agile</a>, <a class='category' href='/blog/categories/git/'>git</a>, <a class='category' href='/blog/categories/github/'>github</a>, <a class='category' href='/blog/categories/metis/'>metis</a>, <a class='category' href='/blog/categories/tech/'>tech</a>, <a class='category' href='/blog/categories/workflow/'>workflow</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://reshleman.github.io/blog/2014/08/08/learning-a-team-based-git-workflow/" data-via="RobertEshleman" data-counturl="http://reshleman.github.io/blog/2014/08/08/learning-a-team-based-git-workflow/" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/07/31/ajax-its-better-with-rails/" title="Previous Post: AJAX: It's Better with Rails">&laquo; AJAX: It's Better with Rails</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+
+</div>
+
+<aside class="sidebar">
+  
+    
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Robert Eshleman -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a> | Themed with <a href="https://github.com/lucaslew/whitespace">Whitespace</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'reshleman';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://reshleman.github.io/blog/2014/08/08/learning-a-team-based-git-workflow/';
+        var disqus_url = 'http://reshleman.github.io/blog/2014/08/08/learning-a-team-based-git-workflow/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

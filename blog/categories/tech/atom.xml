@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Tech | Robert Eshleman]]></title>
   <link href="http://reshleman.github.io/blog/categories/tech/atom.xml" rel="self"/>
   <link href="http://reshleman.github.io/"/>
-  <updated>2014-07-31T16:04:09-04:00</updated>
+  <updated>2014-08-08T14:40:25-04:00</updated>
   <id>http://reshleman.github.io/</id>
   <author>
     <name><![CDATA[Robert Eshleman]]></name>
@@ -12,6 +12,127 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Learning a Team-Based Git Workflow]]></title>
+    <link href="http://reshleman.github.io/blog/2014/08/08/learning-a-team-based-git-workflow/"/>
+    <updated>2014-08-08T14:37:09-04:00</updated>
+    <id>http://reshleman.github.io/blog/2014/08/08/learning-a-team-based-git-workflow</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>At Metis this week, we&rsquo;ve transitioned from learning in a classroom environment to collaborating with a team on our first projects. Among the challenges we&rsquo;ve encountered, mastering a <a href="http://en.wikipedia.org/wiki/Git_%28software%29">Git</a> workflow stands out as one of the most useful — but also intimidating — skills to learn.</p>
+
+<!-- More -->
+
+
+<h2>Working in Feature Branches</h2>
+
+<p>In the past, when I&rsquo;ve used Git for personal projects without collaborators, I&rsquo;ve just written, committed, and pushed code on the <code>master</code> branch without any problems. Working with a team, though, <code>master</code> must be reserved for the <em>master</em> version of the code — the most up-to-date, final, and (hopefully) working version.</p>
+
+<p>Changes that any team member is working on should be made in a separate Git feature branch, which protects <code>master</code> from unintentional changes. The convention we&rsquo;ve used is to name a branch with your initials and a short description of the feature you&rsquo;re writing, like this: <code>re-sign-in-users</code>. This helps other developers identify who the owner of the branch is, and keeps your branches small by ensuring your work is directly related to that feature.</p>
+
+<p>To make a new branch, we first checkout <code>master</code>:</p>
+
+<p><code>
+git checkout master
+</code></p>
+
+<p>It&rsquo;s also a good practice to ensure your <code>master</code> branch is up to date with the remote repository by pulling down any changes to master that have been merged in by another developer:</p>
+
+<p><code>
+git pull origin master
+</code></p>
+
+<p>Then, we can checkout our new feature branch:</p>
+
+<p><code>
+git checkout -b re-sign-in-users
+</code></p>
+
+<h2>Code Reviews on GitHub</h2>
+
+<p>Now that we&rsquo;re on a new branch, we can add, change, and delete code without worrying about modifying <code>master</code>. Let&rsquo;s say we work on our feature, add a few commits, and we think our code is ready to ship. Before we merge our feature into <code>master</code>, we want our teammates to review our code, and <a href="https://github.com">GitHub</a> gives us a great tool for that: <a href="https://help.github.com/articles/using-pull-requests">pull requests</a>.</p>
+
+<p>First, let&rsquo;s push our code to GitHub. From our local branch, we run:</p>
+
+<p><code>
+git push origin re-sign-in-users
+</code></p>
+
+<p>This creates the branch on GitHub if it doesn&rsquo;t exist, and pushes the local branch up to it. GitHub will usually recognize your new branch immediately (AJAX magic!), and you&rsquo;ll see a green &ldquo;Compare &amp; pull request&rdquo; button. GitHub gives you space to add a title and any notes for your team to understand the changes you&rsquo;ve made. I also like to review my own changes one last time to ensure everything looks correct before clicking &ldquo;Create pull request.&rdquo;</p>
+
+<p>Once the PR has been created, our team can review the code and make comments directly in the PR. I&rsquo;ve found this guide on <a href="https://gist.github.com/gabebw/39adacfb03c7308644de">how to read a pull request</a> (written by <a href="http://www.thisismetis.com">Metis</a> instructor <a href="http://gabebw.com/">Gabe Berke-Williams</a>) to be incredibly helpful when reading my teammates' PRs.</p>
+
+<h2>Rebase and Merge</h2>
+
+<p>After your teammates have approved the code, it&rsquo;s time to merge it. There are several approaches to incorporating code from a feature branch into <code>master</code>; we&rsquo;ve been using a workflow that involves <strong>rebasing</strong>.</p>
+
+<p>Until I understood what it really meant, &ldquo;rebase&rdquo; was a frightening word to me. It shouldn&rsquo;t be. In our case, <a href="https://www.atlassian.com/git/tutorial/rewriting-git-history#!rebase">rebasing</a> involves making our changes be <em>based</em> off of the newest commit on <code>master</code>, instead of an older commit from when the feature branch was initially created. This allow us to incorporate any changes that our teammates have made and merged into <code>master</code> since we started writing our feature.</p>
+
+<p>An additional benefit to rebasing is that it allows us to <em>squash</em> our commits, or make multiple discrete commits become one cohesive commit. This keeps our commit history on <code>master</code> clean, because each feature branch becomes only a commit or two, regardless of how many individual commits you made while developing the feature.</p>
+
+<p>There are a few steps here, but the process becomes much easier with practice.</p>
+
+<p>We want to start by making sure our local <code>master</code> branch has the most up-to-date changes from the remote repo:</p>
+
+<p><code>
+git checkout master
+git pull origin master
+</code></p>
+
+<p>Then, we can rebase our branch on master:</p>
+
+<p><code>
+git checkout re-sign-in-users
+git rebase -i master
+</code></p>
+
+<p>The <code>-i</code> flag on <code>rebase</code> triggers an <code>interactive</code> rebase, opening a text editor with a list of the commits from the branch. This is where we have the option of squashing our commits. I won&rsquo;t go into too much detail here, but GitHub has a great <a href="https://help.github.com/articles/using-git-rebase">rebase tutorial</a> about the interactive rebase process.</p>
+
+<p>There&rsquo;s also a possibility that we&rsquo;ll have to resolve merge conflicts if our branch has changes that conflict with <code>master</code>. <a href="https://help.github.com/articles/resolving-a-merge-conflict-from-the-command-line">Resolving merge conflicts</a> during a rebase is the same as during a normal merge, and again GitHub has a great guide explaining this process.</p>
+
+<p>Once our rebase is done, we can merge our changes into <code>master</code> and push them up to GitHub. Because we&rsquo;ve done the hard work in the rebase, the merge itself is easy:</p>
+
+<p><code>
+git checkout master
+git merge re-sign-in-users
+git push origin master
+</code></p>
+
+<h2>Clean Up after Yourself</h2>
+
+<p>After we&rsquo;ve merged our feature branch into <code>master</code>, we should clean up after ourselves. It&rsquo;s a good practice to remove unused branches from the repository — they&rsquo;re just clutter and it they can make it unclear which branches are actively being used. Fortunately, this step is pretty easy.</p>
+
+<p>From the command line, we delete our local feature branch:</p>
+
+<p><code>
+git branch -d re-sign-in-users
+</code></p>
+
+<p>We can also delete our remote GitHub branch using the command line:</p>
+
+<p><code>
+git push origin :re-sign-in-users
+</code></p>
+
+<p>Note the colon before the feature branch name. This syntax allows us to specify which local branch to push from, and which remote branch to push to. In this case, we&rsquo;re pushing a local branch of nothing (before the colon) to the remote branch <code>re-feature-branch</code>. Pushing &ldquo;nothing&rdquo; tells Git to delete the remote branch.</p>
+
+<p>GitHub will kindly close the pull request for you when the remote branch is deleted. Neat!</p>
+
+<h2>Resources</h2>
+
+<p>Here&rsquo;s a quick summary of a few of the most helpful resources I&rsquo;ve found on these topics:</p>
+
+<ul>
+<li><a href="https://help.github.com/articles/using-pull-requests">Overview of pull requests</a></li>
+<li><a href="https://gist.github.com/gabebw/39adacfb03c7308644de">Reading a pull request</a></li>
+<li><a href="https://www.atlassian.com/git/tutorial/rewriting-git-history#!rebase">Overview of rebasing</a></li>
+<li><a href="https://help.github.com/articles/using-git-rebase">GitHub rebasing tutorial</a></li>
+<li><a href="https://help.github.com/articles/resolving-a-merge-conflict-from-the-command-line">GitHub article on resolving merge conflicts</a></li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[AJAX: It's Better With Rails]]></title>
@@ -474,220 +595,6 @@ resources :galleries
 <h2>Further Reading</h2>
 
 <p>The <a href="http://guides.rubyonrails.org/">Rails Guides</a> contain a ton of additional information about how MVC is implemented in Rails, including API references, usage, and code examples. There are specific pages covering <a href="http://guides.rubyonrails.org/active_record_basics.html">models</a>, <a href="http://guides.rubyonrails.org/layouts_and_rendering.html">views</a>, <a href="http://guides.rubyonrails.org/action_controller_overview.html">controllers</a>, and <a href="http://guides.rubyonrails.org/routing.html">routing</a>. The <a href="http://api.rubyonrails.org/">Rails API</a> is also helpful for more precise information about available methods.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Creating a Basic Web App With Ruby and Sinatra]]></title>
-    <link href="http://reshleman.github.io/blog/2014/06/26/creating-a-basic-web-app-with-ruby-and-sinatra/"/>
-    <updated>2014-06-26T12:45:25-04:00</updated>
-    <id>http://reshleman.github.io/blog/2014/06/26/creating-a-basic-web-app-with-ruby-and-sinatra</id>
-    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
-
-<p>This week at Metis, we’re using Ruby and <a href="http://www.sinatrarb.com">Sinatra</a> to get started with some basic dynamic web programming as a stepping stone to Rails. At its core, Sinatra is a Ruby gem that allows you to specify how an app will respond to different <a href="http://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods">http requests</a> (<code>GET</code>, <code>POST</code>, etc.) and routes (the part of the URL after the domain, like <code>/</code> or <code>/blog</code> or <code>/blog/post/123</code>).</p>
-
-<p>In this post, we’ll walk through creating a basic &ldquo;hello world&rdquo;-style app that offers a greeting to the user, customized based on the url.</p>
-
-<!-- MORE -->
-
-
-<h2>Setting up Sinatra</h2>
-
-<p>Since Sinatra is a gem, we’ll start by installing it with <code>gem install sinatra</code> in the terminal. We’ll also create a separate directory for this project (<code>mkdir hello_sinatra</code>).</p>
-
-<p>In a new Ruby file (I’m using <code>hello_sinatra.rb</code>), add the line <code>require "sinatra"</code> so we can begin using the gem. We’re ready to go!</p>
-
-<h2>Hello, World!</h2>
-
-<p>To start, we just want the app to print out &ldquo;Hello, world!&rdquo; when we navigate to the domain’s base directory in the browser. That’s the &ldquo;root route&rdquo; (say that 10 times fast), or the domain name without any path at the end (like <code>http://your_domain.com/</code>).</p>
-
-<p>In Sinatra, we do this by calling <a href="http://www.sinatrarb.com/intro.html#Routes">a method</a> that corresponds to the HTTP request type we want to recognize (in this case, <code>get</code>), and we pass it the route as an argument (in this case, <code>"/"</code>).</p>
-
-<p>This method also takes a block, and the return value of the block is sent as the response to the web browser. Usually this will be a string containing HTML code, but we’ll start with simple text for now.</p>
-
-<p>Here’s what it looks like:</p>
-
-<p>``` ruby
-require &ldquo;sinatra&rdquo;</p>
-
-<p>get &ldquo;/&rdquo; do
-  &ldquo;Hello, world!&rdquo;
-end
-```</p>
-
-<h3>Test It Out</h3>
-
-<p>We can test it out in our browser by running <code>ruby hello_sinatra.rb</code>. This will launch a local server using port 4567 so we can load the app in a browser. Navigate to <code>localhost:4567</code> in your browser to check it out. If everything’s working, you’ll see &ldquo;Hello, World!&rdquo; in plain text.</p>
-
-<p>Congratulations! You’ve built a simple web app!</p>
-
-<h2>Adding URL Parameters</h2>
-
-<p>This is a nice proof-of-concept, but it doesn’t really <em>do</em> anything yet. Let’s change it up by printing different text based on the URL route that the user types in.</p>
-
-<p>Sinatra allows us to specify parameters that take a value typed within the URL by the user. Parameters are specified with a <code>:symbol</code> in the route. So we could define a new route to dynamically change the greeting based on the URL:</p>
-
-<p><code>ruby
-get "/hello/:name" do
-  @greeting_name = params[:name]
-  "Hello, #{@greeting_name.capitalize}!"
-end
-</code></p>
-
-<p>We’ve added a couple of things here. Notice the symbol <code>:name</code> in the route — this is like a variable. Whatever is typed in the URL after <code>/hello/</code> will automatically be added by Sinatra to a hash called <code>params</code>. On the second line, we’re assigning that string from the <code>params</code> hash to an instance variable called <code>@greeting_name</code>. Finally, we just include that name in a string as the block’s return value, which is sent to the browser.</p>
-
-<h3>Test it Out</h3>
-
-<p>Let’s try it out. Note that <strong>every time we change the Ruby file, we’ll need to restart the server.</strong> Use <code>CTL-c</code> in the terminal to quit the server, and run <code>ruby hello_sinatra.rb</code> again to relaunch the server with the updated Ruby file. In the browser, type <code>http://localhost:4567/hello/weasel</code> to load the page. If everything’s working correctly, you’ll see &ldquo;Hello, Weasel!&rdquo; in plain text.</p>
-
-<p>Way to go! We’re dynamically generating content based on the URL! Try changing up the URL after <code>hello/</code> to see what happens.</p>
-
-<h2>Multiple Parameters</h2>
-
-<p>From here, it’s trivial to add additional parameters to your routes by adding additional symbols. Let’s update the program to output the name <em>and</em> the greeting based on the URL:</p>
-
-<p><code>ruby
-get "/:greeting/:name" do
-  @greeting_name = params[:name]
-  @greeting_text = params[:greeting]
-  "#{@greeting_text.capitalize}, #{@greeting_name.capitalize}!"
-end
-</code></p>
-
-<p>Reload the server and test it out in your browser with <code>http://localhost:4567/goodbye/squirrel</code>.</p>
-
-<h3>Aside: Reloading the Server</h3>
-
-<p>Reloading the server every time we change our Ruby file is a pain, and it can cause headaches if you’re trying to troubleshoot your code but forget to restart the server. (It happens, I promise.) Luckily, there’s a gem that makes our life easier; it’s called Shotgun.</p>
-
-<p>To get Shotgun, install it like any other gem: <code>gem install shotgun</code>. Then, instead of running your program with <code>ruby hello_sinatra.rb</code>, you can use <code>shotgun hello_sinatra.rb</code>. This will automatically reload your application each time a request is sent by the server, so you don’t have to kill the server and restart it each time. Awesome.</p>
-
-<p>Also note that Shotgun uses a different default port, so you’ll want to point your browser to <code>http://localhost:9393</code> instead.</p>
-
-<h2>Multiple Routes</h2>
-
-<p>Sinatra reads the routes in the order they’re written in your Ruby file; as soon as it finds a route that matches the request sent to the server, it executes that route. This means that routes should be listed in order from most specific to least specific. For example:</p>
-
-<p>``` ruby
-get &ldquo;/:everything&rdquo; do
-  &ldquo;I match everything typed in the URL after &lsquo;/&rsquo;!&rdquo;
-end</p>
-
-<p>get &ldquo;/partytime&rdquo; do
-  &ldquo;This is a super exciting block, but it will never execute, because the first &lsquo;get&rsquo; route matches &lsquo;/partytime&rsquo;.&rdquo;
-end
-```</p>
-
-<p>Switching these around will produce the expected result.</p>
-
-<h2>ERB</h2>
-
-<p>Now that we’re serving up some dynamic text, we’ll probably want to format it. But we also don’t want to start mixing a bunch of HTML code into our Ruby logic. Sinatra has a solution: it works with <a href="http://en.wikipedia.org/wiki/ERuby">embedded ruby</a> files.</p>
-
-<p>ERB is, in this case, simply HTML code with two additional pieces of syntax: <code>&lt;% … %&gt;</code> and <code>&lt;%= … %&gt;</code>. This allows us to embed Ruby code into an HTML page by inserting it between the tags.</p>
-
-<p>There is one simple difference between these tags:</p>
-
-<ul>
-<li>The <code>&lt;% … %&gt;</code> tags execute any Ruby inside of them, but do not output the return value to the page.</li>
-<li>The <code>&lt;%= … %&gt;</code> tags execute the Ruby code inside of them, and also perform string interpolation on the return value of the ruby code. This is printed to the page.</li>
-</ul>
-
-
-<h3>Using ERB</h3>
-
-<p>To use an ERB template, we just add it to the block and use a symbol to reference the ERB file:</p>
-
-<p><code>ruby
-get "/:greeting/:name" do
-  @greeting_name = params[:name]
-  @greeting_text = params[:greeting]
-  erb :greeting
-end
-</code></p>
-
-<p>The line <code>erb :greeting</code> tells Sinatra to look in the <code>views/</code> folder — the default for all template and layout files — for a file named <code>greeting.erb</code>. After processing the embedded Ruby, the server sends the output of that file to the browser.</p>
-
-<p>Let’s create a our ERB file for this route: <code>views/greeting.erb</code>.</p>
-
-<p>``` erb
-<html>
-  <head></p>
-
-<pre><code>&lt;title&gt;Greeting Page&lt;/title&gt;
-</code></pre>
-
-<p>  </head>
-  <body></p>
-
-<pre><code>&lt;p&gt;
-  Hello, world!
-&lt;/p&gt;
-</code></pre>
-
-<p>  </body>
-</html>
-```</p>
-
-<p>Save everything and load <code>http://localhost:9393/howdy/partner</code> in your browser. You should see &ldquo;Hello, world!&rdquo; printed out.</p>
-
-<h3>Instance Variables in ERB</h3>
-
-<p>But wait! ERB templates aren’t any fun if we print the same static page for every route. Fortunately, we can access our instance variables from within the ERB file:</p>
-
-<p>``` erb
-<html>
-  <head></p>
-
-<pre><code>&lt;title&gt;Greeting Page&lt;/title&gt;
-</code></pre>
-
-<p>  </head>
-  <body></p>
-
-<pre><code>&lt;p&gt;
-  &lt;%= @greeting_text.capitalize %&gt;, &lt;%= @greeting_name.capitalize %&gt;!
-&lt;/p&gt;
-</code></pre>
-
-<p>  </body>
-</html>
-```</p>
-
-<p>When we reload the page now, we should see &ldquo;Howdy, Partner!&rdquo;, as expected.</p>
-
-<p>Try updating the <code>&lt;title&gt;</code> element to include the instance variables as well, instead of a generic greeting.</p>
-
-<h3>File Conventions and Directory Structure</h3>
-
-<p>In addition to using the <code>views/</code> directory for templates, Sinatra will also look in the <code>public/</code> directory (in the project root) for any <em>static resources</em> referenced in your views. That includes any images, stylesheets, javascripts, etc.</p>
-
-<p>For example, this tag in an ERB file will load the specified image from <code>public/</code>:</p>
-
-<p>``` html</p>
-
-<!-- note the leading slash -->
-
-
-<p><img src="http://reshleman.github.io/grumpy_cat.png">
-```</p>
-
-<h2>Taking it Further</h2>
-
-<p>Sinatra has an additional templating feature called &ldquo;layouts,&rdquo; which allows us to separate out some of the boilerplate HTML from our template files, to avoid repetition.</p>
-
-<p>And we’ve only just scratched the surface here, but Sinatra also supports responding to other HTTP requests such as <code>POST</code> which allows the user to send information to the server via a web form.</p>
-
-<p>I may explore these features (and/or others) in a later post.</p>
-
-<h2>Additional Resources</h2>
-
-<ul>
-<li>Sinatra’s Fantastic <a href="http://www.sinatrarb.com/intro.html">Getting Started Guide</a></li>
-<li><a href="http://www.sinatrarb.com/documentation.html">Sinatra Documentation</a></li>
-<li><a href="https://github.com/rtomayko/shotgun">Shotgun on GitHub</a></li>
-</ul>
-
 ]]></content>
   </entry>
   
