@@ -4,7 +4,7 @@
   <title><![CDATA[Robert Eshleman]]></title>
   <link href="http://reshleman.github.io/atom.xml" rel="self"/>
   <link href="http://reshleman.github.io/"/>
-  <updated>2014-08-08T14:40:25-04:00</updated>
+  <updated>2014-08-14T17:23:58-04:00</updated>
   <id>http://reshleman.github.io/</id>
   <author>
     <name><![CDATA[Robert Eshleman]]></name>
@@ -12,6 +12,162 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Using Rails Namespaces for Admin Actions]]></title>
+    <link href="http://reshleman.github.io/blog/2014/08/14/using-rails-namespaces-for-admin-actions/"/>
+    <updated>2014-08-14T17:17:56-04:00</updated>
+    <id>http://reshleman.github.io/blog/2014/08/14/using-rails-namespaces-for-admin-actions</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>Rails has several strategies to help us separate concerns in our applications. We use separate files and directories for models, views and controllers, for example, and we can nest routes based on how the resources are related to each other.</p>
+
+<p>In addition, Rails permits the use of <a href="http://en.wikipedia.org/wiki/Namespace">namespaces</a> to organize our resources and prevent naming conflicts. In this post, we&rsquo;ll take a look at why this feature is useful by implementing a namespace for admin actions in a sample <a href="http://craigslist.org">Craigslist</a> clone Rails app.</p>
+
+<!--More-->
+
+
+<h2>Routing</h2>
+
+<p>In our version of Craigslist, our app has many categories (i.e., &ldquo;bikes,&rdquo; &ldquo;boats,&rdquo; &ldquo;missed connections,&rdquo; etc.), each with many posts. To start out, our routes look something like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">resources</span> <span class="ss">:categories</span><span class="p">,</span> <span class="ss">only</span><span class="p">:</span> <span class="o">[</span><span class="ss">:index</span><span class="p">,</span> <span class="ss">:show</span><span class="o">]</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">resources</span> <span class="ss">:posts</span><span class="p">,</span> <span class="ss">only</span><span class="p">:</span> <span class="o">[</span><span class="ss">:new</span><span class="p">,</span> <span class="ss">:create</span><span class="p">,</span> <span class="ss">:show</span><span class="o">]</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We want to give admin users the ability to add categories, so we add the following to our <code>routes.rb</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">namespace</span> <span class="ss">:admin</span> <span class="k">do</span>
+</span><span class='line'>  <span class="n">resources</span> <span class="ss">:categories</span><span class="p">,</span> <span class="ss">only</span><span class="p">:</span> <span class="o">[</span><span class="ss">:new</span><span class="p">,</span> <span class="ss">:create</span><span class="o">]</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This gives us routes under the path <code>/admin/categories</code> which are directed to <code>Admin::CategoriesController</code>.</p>
+
+<h2>The Controller</h2>
+
+<p>There are a few considerations we have for our namespaced controller.</p>
+
+<p>First, Rails expects this controller file to exist in an <code>admin/</code> folder within <code>app/controllers/</code> (i.e., at <code>app/controllers/admin/categories_controller.rb</code>).</p>
+
+<p>Second, because the controller is named within the <code>admin</code> namespace, we use the <a href="http://en.wikipedia.org/wiki/Scope_resolution_operator">scope resolution operator</a> to define the controller class:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">Admin</span><span class="o">::</span><span class="no">CategoriesController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
+</span><span class='line'>  <span class="c1"># Methods omitted</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>From there, we can define our <code>new</code> and <code>create</code> actions as we normally would.</p>
+
+<p>Note, also, that we still have our non-namespaced <code>categories</code> routes (for <code>show</code> and <code>index</code>) that direct requests to the standard <code>CategoriesController</code> in <code>app/controllers/</code>.</p>
+
+<h2>Views</h2>
+
+<p>Views that correspond to our <code>Admin::CategoriesController</code> actions are namespaced just like the controller is. When Rails needs these view files, it will look in the <code>app/views/admin/</code> subfolder.</p>
+
+<p>Additionally, we&rsquo;ll need to point our path helpers to the right place for namespaced routes. For example, we&rsquo;ll use paths like <code>new_admin_category_path</code> and <code>form_for [:admin, @category]</code> in our views.</p>
+
+<h2>Restricting Access to Admin Actions</h2>
+
+<p>So far, we have our admin actions working within the namespace, but we&rsquo;re not actually restricting access to these actions.</p>
+
+<p>There are a couple of approaches here. We&rsquo;ll start by adding a simple <code>before_action</code> to the <code>Admin::CategoriesController</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">Admin</span><span class="o">::</span><span class="no">CategoriesController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
+</span><span class='line'>  <span class="n">before_action</span> <span class="ss">:require_admin</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1"># Methods omitted</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">require_admin</span>
+</span><span class='line'>    <span class="k">unless</span> <span class="n">current_user</span><span class="o">.</span><span class="n">admin?</span>
+</span><span class='line'>      <span class="n">redirect_to</span> <span class="n">root_path</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>We have a <code>current_user</code> method already defined by our authentication system. (I&rsquo;ve been quite happy using <a href="https://github.com/halogenandtoast/monban">Monban</a> recently.) Additionally, our <code>User</code> model has a boolean <code>admin</code> field, so we can simply redirect if the user isn&rsquo;t an admin.</p>
+
+<h2>Refactoring</h2>
+
+<p>This approach works, but it&rsquo;s not very flexible. If we add other admin actions (say, for filtering posts flagged as spam), we have to redefine this <code>require_admin</code> method in each namespaced controller.</p>
+
+<p>One solution might be to define the <code>require_admin</code> method in our <code>ApplicationController</code>. That&rsquo;s a step in the right direction, but we would have to remember to add the <code>before_action</code> to each admin controller; these controllers wouldn&rsquo;t be secure by default.</p>
+
+<p>The solution I prefer is to define a separate class (in <code>app/controllers/</code>) called <code>AdminController</code> that inherits from <code>ApplicationController</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">AdminController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
+</span><span class='line'>  <span class="n">before_action</span> <span class="ss">:require_admin</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">require_admin</span>
+</span><span class='line'>    <span class="k">unless</span> <span class="n">current_user</span><span class="o">.</span><span class="n">admin?</span>
+</span><span class='line'>      <span class="n">redirect_to</span> <span class="n">root_path</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now, each namespaced admin controller can inherit directly (and quite appropriately) from <code>AdminController</code>. Since we&rsquo;ve defined the <code>before_action</code> in <code>AdminController</code>, actions in any sub-classed controller will be restricted to admin users by default.</p>
+
+<p>We no longer need to list the <code>before_action</code> or define a <code>require_admin</code> method in each of our namespaced controllers; they just inherit from <code>AdminController</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">Admin</span><span class="o">::</span><span class="no">CategoriesController</span> <span class="o">&lt;</span> <span class="no">AdminController</span>
+</span><span class='line'>  <span class="c1"># Methods omitted</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Simple, effective, and scalable. By extracting the <code>before_action</code> and <code>require_admin</code> logic into a separate parent controller, we&rsquo;ve made it startlingly easy to add new admin actions in the future.</p>
+
+<p>We&rsquo;ll thank ourselves later.</p>
+
+<h2>Resources</h2>
+
+<ul>
+<li><a href="http://guides.rubyonrails.org/routing.html#controller-namespaces-and-routing">Rails Guide on Routing</a></li>
+<li><a href="https://github.com/halogenandtoast/monban">Monban User Authentication</a></li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Learning a Team-Based Git Workflow]]></title>
