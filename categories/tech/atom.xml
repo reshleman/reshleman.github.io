@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Tech | Robert Eshleman]]></title>
+  <link href="http://blog.roberteshleman.com/categories/tech/atom.xml" rel="self"/>
+  <link href="http://blog.roberteshleman.com/"/>
+  <updated>2014-08-21T17:00:06-04:00</updated>
+  <id>http://blog.roberteshleman.com/</id>
+  <author>
+    <name><![CDATA[Robert Eshleman]]></name>
+    <email><![CDATA[hello@roberteshleman.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Using Rails Namespaces for Admin Actions]]></title>
+    <link href="http://blog.roberteshleman.com/2014/08/14/using-rails-namespaces-for-admin-actions/"/>
+    <updated>2014-08-14T17:17:56-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/08/14/using-rails-namespaces-for-admin-actions</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>Rails has several strategies to help us separate concerns in our applications. We use separate files and directories for models, views and controllers, for example, and we can nest routes based on how the resources are related to each other.</p>
+
+<p>In addition, Rails permits the use of <a href="http://en.wikipedia.org/wiki/Namespace">namespaces</a> to organize our resources and prevent naming conflicts. In this post, we&rsquo;ll take a look at why this feature is useful by implementing a namespace for admin actions in a sample <a href="http://craigslist.org">Craigslist</a> clone Rails app.</p>
+
+<!--More-->
+
+
+<h2>Routing</h2>
+
+<p>In our version of Craigslist, our app has many categories (i.e., &ldquo;bikes,&rdquo; &ldquo;boats,&rdquo; &ldquo;missed connections,&rdquo; etc.), each with many posts. To start out, our routes look something like this:</p>
+
+<p><code>ruby
+resources :categories, only: [:index, :show] do
+  resources :posts, only: [:new, :create, :show]
+end
+</code></p>
+
+<p>We want to give admin users the ability to add categories, so we add the following to our <code>routes.rb</code>:</p>
+
+<p><code>ruby
+namespace :admin do
+  resources :categories, only: [:new, :create]
+end
+</code></p>
+
+<p>This gives us routes under the path <code>/admin/categories</code> which are directed to <code>Admin::CategoriesController</code>.</p>
+
+<h2>The Controller</h2>
+
+<p>There are a few considerations we have for our namespaced controller.</p>
+
+<p>First, Rails expects this controller file to exist in an <code>admin/</code> folder within <code>app/controllers/</code> (i.e., at <code>app/controllers/admin/categories_controller.rb</code>).</p>
+
+<p>Second, because the controller is named within the <code>admin</code> namespace, we use the <a href="http://en.wikipedia.org/wiki/Scope_resolution_operator">scope resolution operator</a> to define the controller class:</p>
+
+<p><code>ruby
+class Admin::CategoriesController &lt; ApplicationController
+  # Methods omitted
+end
+</code></p>
+
+<p>From there, we can define our <code>new</code> and <code>create</code> actions as we normally would.</p>
+
+<p>Note, also, that we still have our non-namespaced <code>categories</code> routes (for <code>show</code> and <code>index</code>) that direct requests to the standard <code>CategoriesController</code> in <code>app/controllers/</code>.</p>
+
+<h2>Views</h2>
+
+<p>Views that correspond to our <code>Admin::CategoriesController</code> actions are namespaced just like the controller is. When Rails needs these view files, it will look in the <code>app/views/admin/</code> subfolder.</p>
+
+<p>Additionally, we&rsquo;ll need to point our path helpers to the right place for namespaced routes. For example, we&rsquo;ll use paths like <code>new_admin_category_path</code> and <code>form_for [:admin, @category]</code> in our views.</p>
+
+<h2>Restricting Access to Admin Actions</h2>
+
+<p>So far, we have our admin actions working within the namespace, but we&rsquo;re not actually restricting access to these actions.</p>
+
+<p>There are a couple of approaches here. We&rsquo;ll start by adding a simple <code>before_action</code> to the <code>Admin::CategoriesController</code>:</p>
+
+<p>```ruby
+class Admin::CategoriesController &lt; ApplicationController
+  before_action :require_admin</p>
+
+<p>  # Methods omitted</p>
+
+<p>  def require_admin</p>
+
+<pre><code>unless current_user.admin?
+  redirect_to root_path
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>We have a <code>current_user</code> method already defined by our authentication system. (I&rsquo;ve been quite happy using <a href="https://github.com/halogenandtoast/monban">Monban</a> recently.) Additionally, our <code>User</code> model has a boolean <code>admin</code> field, so we can simply redirect if the user isn&rsquo;t an admin.</p>
+
+<h2>Refactoring</h2>
+
+<p>This approach works, but it&rsquo;s not very flexible. If we add other admin actions (say, for filtering posts flagged as spam), we have to redefine this <code>require_admin</code> method in each namespaced controller.</p>
+
+<p>One solution might be to define the <code>require_admin</code> method in our <code>ApplicationController</code>. That&rsquo;s a step in the right direction, but we would have to remember to add the <code>before_action</code> to each admin controller; these controllers wouldn&rsquo;t be secure by default.</p>
+
+<p>The solution I prefer is to define a separate class (in <code>app/controllers/</code>) called <code>AdminController</code> that inherits from <code>ApplicationController</code>:</p>
+
+<p>```ruby
+class AdminController &lt; ApplicationController
+  before_action :require_admin</p>
+
+<p>  def require_admin</p>
+
+<pre><code>unless current_user.admin?
+  redirect_to root_path
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Now, each namespaced admin controller can inherit directly (and quite appropriately) from <code>AdminController</code>. Since we&rsquo;ve defined the <code>before_action</code> in <code>AdminController</code>, actions in any sub-classed controller will be restricted to admin users by default.</p>
+
+<p>We no longer need to list the <code>before_action</code> or define a <code>require_admin</code> method in each of our namespaced controllers; they just inherit from <code>AdminController</code>:</p>
+
+<p><code>ruby
+class Admin::CategoriesController &lt; AdminController
+  # Methods omitted
+end
+</code></p>
+
+<p>Simple, effective, and scalable. By extracting the <code>before_action</code> and <code>require_admin</code> logic into a separate parent controller, we&rsquo;ve made it startlingly easy to add new admin actions in the future.</p>
+
+<p>We&rsquo;ll thank ourselves later.</p>
+
+<h2>Resources</h2>
+
+<ul>
+<li><a href="http://guides.rubyonrails.org/routing.html#controller-namespaces-and-routing">Rails Guide on Routing</a></li>
+<li><a href="https://github.com/halogenandtoast/monban">Monban User Authentication</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Learning a Team-Based Git Workflow]]></title>
+    <link href="http://blog.roberteshleman.com/2014/08/08/learning-a-team-based-git-workflow/"/>
+    <updated>2014-08-08T14:37:09-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/08/08/learning-a-team-based-git-workflow</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>At Metis this week, we&rsquo;ve transitioned from learning in a classroom environment to collaborating with a team on our first projects. Among the challenges we&rsquo;ve encountered, mastering a <a href="http://en.wikipedia.org/wiki/Git_%28software%29">Git</a> workflow stands out as one of the most useful — but also intimidating — skills to learn.</p>
+
+<!-- More -->
+
+
+<h2>Working in Feature Branches</h2>
+
+<p>In the past, when I&rsquo;ve used Git for personal projects without collaborators, I&rsquo;ve just written, committed, and pushed code on the <code>master</code> branch without any problems. Working with a team, though, <code>master</code> must be reserved for the <em>master</em> version of the code — the most up-to-date, final, and (hopefully) working version.</p>
+
+<p>Changes that any team member is working on should be made in a separate Git feature branch, which protects <code>master</code> from unintentional changes. The convention we&rsquo;ve used is to name a branch with your initials and a short description of the feature you&rsquo;re writing, like this: <code>re-sign-in-users</code>. This helps other developers identify who the owner of the branch is, and keeps your branches small by ensuring your work is directly related to that feature.</p>
+
+<p>To make a new branch, we first checkout <code>master</code>:</p>
+
+<p><code>
+git checkout master
+</code></p>
+
+<p>It&rsquo;s also a good practice to ensure your <code>master</code> branch is up to date with the remote repository by pulling down any changes to master that have been merged in by another developer:</p>
+
+<p><code>
+git pull origin master
+</code></p>
+
+<p>Then, we can checkout our new feature branch:</p>
+
+<p><code>
+git checkout -b re-sign-in-users
+</code></p>
+
+<h2>Code Reviews on GitHub</h2>
+
+<p>Now that we&rsquo;re on a new branch, we can add, change, and delete code without worrying about modifying <code>master</code>. Let&rsquo;s say we work on our feature, add a few commits, and we think our code is ready to ship. Before we merge our feature into <code>master</code>, we want our teammates to review our code, and <a href="https://github.com">GitHub</a> gives us a great tool for that: <a href="https://help.github.com/articles/using-pull-requests">pull requests</a>.</p>
+
+<p>First, let&rsquo;s push our code to GitHub. From our local branch, we run:</p>
+
+<p><code>
+git push origin re-sign-in-users
+</code></p>
+
+<p>This creates the branch on GitHub if it doesn&rsquo;t exist, and pushes the local branch up to it. GitHub will usually recognize your new branch immediately (AJAX magic!), and you&rsquo;ll see a green &ldquo;Compare &amp; pull request&rdquo; button. GitHub gives you space to add a title and any notes for your team to understand the changes you&rsquo;ve made. I also like to review my own changes one last time to ensure everything looks correct before clicking &ldquo;Create pull request.&rdquo;</p>
+
+<p>Once the PR has been created, our team can review the code and make comments directly in the PR. I&rsquo;ve found this guide on <a href="https://gist.github.com/gabebw/39adacfb03c7308644de">how to read a pull request</a> (written by <a href="http://www.thisismetis.com">Metis</a> instructor <a href="http://gabebw.com/">Gabe Berke-Williams</a>) to be incredibly helpful when reading my teammates' PRs.</p>
+
+<h2>Rebase and Merge</h2>
+
+<p>After your teammates have approved the code, it&rsquo;s time to merge it. There are several approaches to incorporating code from a feature branch into <code>master</code>; we&rsquo;ve been using a workflow that involves <strong>rebasing</strong>.</p>
+
+<p>Until I understood what it really meant, &ldquo;rebase&rdquo; was a frightening word to me. It shouldn&rsquo;t be. In our case, <a href="https://www.atlassian.com/git/tutorial/rewriting-git-history#!rebase">rebasing</a> involves making our changes be <em>based</em> off of the newest commit on <code>master</code>, instead of an older commit from when the feature branch was initially created. This allow us to incorporate any changes that our teammates have made and merged into <code>master</code> since we started writing our feature.</p>
+
+<p>An additional benefit to rebasing is that it allows us to <em>squash</em> our commits, or make multiple discrete commits become one cohesive commit. This keeps our commit history on <code>master</code> clean, because each feature branch becomes only a commit or two, regardless of how many individual commits you made while developing the feature.</p>
+
+<p>There are a few steps here, but the process becomes much easier with practice.</p>
+
+<p>We want to start by making sure our local <code>master</code> branch has the most up-to-date changes from the remote repo:</p>
+
+<p><code>
+git checkout master
+git pull origin master
+</code></p>
+
+<p>Then, we can rebase our branch on master:</p>
+
+<p><code>
+git checkout re-sign-in-users
+git rebase -i master
+</code></p>
+
+<p>The <code>-i</code> flag on <code>rebase</code> triggers an <code>interactive</code> rebase, opening a text editor with a list of the commits from the branch. This is where we have the option of squashing our commits. I won&rsquo;t go into too much detail here, but GitHub has a great <a href="https://help.github.com/articles/using-git-rebase">rebase tutorial</a> about the interactive rebase process.</p>
+
+<p>There&rsquo;s also a possibility that we&rsquo;ll have to resolve merge conflicts if our branch has changes that conflict with <code>master</code>. <a href="https://help.github.com/articles/resolving-a-merge-conflict-from-the-command-line">Resolving merge conflicts</a> during a rebase is the same as during a normal merge, and again GitHub has a great guide explaining this process.</p>
+
+<p>Once our rebase is done, we can merge our changes into <code>master</code> and push them up to GitHub. Because we&rsquo;ve done the hard work in the rebase, the merge itself is easy:</p>
+
+<p><code>
+git checkout master
+git merge re-sign-in-users
+git push origin master
+</code></p>
+
+<h2>Clean Up after Yourself</h2>
+
+<p>After we&rsquo;ve merged our feature branch into <code>master</code>, we should clean up after ourselves. It&rsquo;s a good practice to remove unused branches from the repository — they&rsquo;re just clutter and it they can make it unclear which branches are actively being used. Fortunately, this step is pretty easy.</p>
+
+<p>From the command line, we delete our local feature branch:</p>
+
+<p><code>
+git branch -d re-sign-in-users
+</code></p>
+
+<p>We can also delete our remote GitHub branch using the command line:</p>
+
+<p><code>
+git push origin :re-sign-in-users
+</code></p>
+
+<p>Note the colon before the feature branch name. This syntax allows us to specify which local branch to push from, and which remote branch to push to. In this case, we&rsquo;re pushing a local branch of nothing (before the colon) to the remote branch <code>re-feature-branch</code>. Pushing &ldquo;nothing&rdquo; tells Git to delete the remote branch.</p>
+
+<p>GitHub will kindly close the pull request for you when the remote branch is deleted. Neat!</p>
+
+<h2>Resources</h2>
+
+<p>Here&rsquo;s a quick summary of a few of the most helpful resources I&rsquo;ve found on these topics:</p>
+
+<ul>
+<li><a href="https://help.github.com/articles/using-pull-requests">Overview of pull requests</a></li>
+<li><a href="https://gist.github.com/gabebw/39adacfb03c7308644de">Reading a pull request</a></li>
+<li><a href="https://www.atlassian.com/git/tutorial/rewriting-git-history#!rebase">Overview of rebasing</a></li>
+<li><a href="https://help.github.com/articles/using-git-rebase">GitHub rebasing tutorial</a></li>
+<li><a href="https://help.github.com/articles/resolving-a-merge-conflict-from-the-command-line">GitHub article on resolving merge conflicts</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[AJAX: It's Better With Rails]]></title>
+    <link href="http://blog.roberteshleman.com/2014/07/31/ajax-its-better-with-rails/"/>
+    <updated>2014-07-31T15:59:11-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/07/31/ajax-its-better-with-rails</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>Most people love the responsive experience of using <a href="http://en.wikipedia.org/wiki/Ajax_%28programming%29">AJAX</a>-y web pages. <em>Creating</em> that functionality, on the other hand, is not always so enjoyable: asynchronous requests can be difficult to code and debug.</p>
+
+<p>It may not be a surprise that Rails helps us abstract some of the more challenging AJAX code. In this post, we&rsquo;ll take a look at a basic AJAX request constructed with vanilla jQuery; then, we&rsquo;ll check out the tools Rails gives us to create and respond to asynchronous requests.</p>
+
+<!--More-->
+
+
+<h2>The Hard Way</h2>
+
+<p>The <a href="http://jquery.com/">jQuery library</a> allows us to construct AJAX requests ourselves. If we were to do this for a form submission to create a new task in a todo-list app, it might look something like this:</p>
+
+<p>```js
+$(function() {
+  $(&ldquo;#form_id&rdquo;).submit(function() {</p>
+
+<pre><code>$.post(
+  "/tasks",
+  { task: 
+    { title: 
+      $("#task_title").val()
+    }
+  },
+  function(data) {
+    $("#tasks").prepend(data)
+  }
+);
+return false;
+</code></pre>
+
+<p>  });
+});
+```</p>
+
+<p>The outer function call (<code>$(function() { ... });</code>) tells jQuery that the code inside is to be executed once the <a href="http://api.jquery.com/ready/">document is ready</a> (i.e., after the entire DOM loads).</p>
+
+<p>Then, we tell the browser to <a href="http://api.jquery.com/submit/">bind a function to the submit event</a> for our form, by calling <code>$("#form_id").submit(function() { ... });</code>. This tells the browser that the enclosed JavaScript function should be executed when the form is submitted.</p>
+
+<p>Within that function we have two statements: the first one (<code>$.post( ... );</code>) <a href="http://api.jquery.com/jQuery.post/">creates a POST request via AJAX</a>; the second (<code>return false;</code>) tells the browser not to execute the default action for the submitted form, which, in this case, would cause the page to reload.</p>
+
+<p>Our actual AJAX request has three parameters: the route &ldquo;/tasks&rdquo;, which we send the request to, the data we&rsquo;re sending (an object), and a callback function that runs if the request is successful. Our callback function simply <a href="http://api.jquery.com/prepend/">prepends</a> the <code>data</code> (in this case, HTML) returned by the server to the DOM element with the id of <code>tasks</code>.</p>
+
+<p>Phew.</p>
+
+<h2>The Rails Way</h2>
+
+<p>Fortunately, Rails can take care of a lot of this code for us. If we&rsquo;re using <code>form_for</code> or <code>link_to</code> in our view, we can specify the argument <code>remote: true</code> to cause Rails to <a href="http://edgeguides.rubyonrails.org/working_with_javascript_in_rails.html#built-in-helpers">automatically submit the form</a> (or load the link) via an AJAX request. We don&rsquo;t have to write any of the JavaScript to send the request!</p>
+
+<p>We will have to write the JavaScript we want the browser to execute when we receive the response, but Rails sends that JavaScript as the response to the AJAX request. We&rsquo;ll need to take a look at our Controller for that.</p>
+
+<h2>XHR in Controllers</h2>
+
+<p>One neat thing about Rails is that we can use the same controller and action for a standard HTTP request and for an asynchronous request, simply by telling Rails what kind of requests to respond to.</p>
+
+<p>In our controller, we use a <a href="http://api.rubyonrails.org/classes/ActionController/MimeResponds.html#method-i-respond_to"><code>respond_to</code></a> block to list the different formats:</p>
+
+<p>```rb
+def create
+  # Do some stuff to create a task
+  respond_to do |format|</p>
+
+<pre><code>format.html { redirect_to tasks_path }
+format.js   { }
+</code></pre>
+
+<p>   end
+end
+```</p>
+
+<p>This code tells Rails to respond to either a request for an HTML response or a request for a JavaScript response. If the browser is asking for an HTML response, we just redirect to the given path; if the browser is expecting a JavaScript response (it does when we use <code>remote: true</code> on our form), then we render the default view for this controller, action, and response format. In this case, that would be <code>app/views/tasks/create.js.erb</code></p>
+
+<h2>.js.erb Views</h2>
+
+<p>In that view, we can include any JavaScript we want, <strong>and the browser will automatically execute that JavaScript</strong> when it receives the response. This basically becomes our callback function, and, because it&rsquo;s a view, we can render partials in it.</p>
+
+<p>Our <code>.js.erb</code> file for this example might look like:</p>
+
+<p><code>js
+$("#tasks").prepend("&lt;%=j render @task %&gt;");
+$("#task_title").val("");
+</code></p>
+
+<p>This JavaScript prepends the rendered task to the DOM element with the id <code>tasks</code>, and clears our form field. Note that we use special ERB tags (<code>&lt;%=j ... %&gt;</code>) to escape our rendered data so that it can be safely included in a JavaScript string.</p>
+
+<h2>Resources</h2>
+
+<p>That&rsquo;s a quick overview of some of the most basic things you can do with Rails and JavaScript. There are plenty of resources on the web with more information about <a href="http://it-ebooks.info/book/274/">JavaScript</a>, <a href="http://api.jquery.com/">jQuery</a>, <a href="http://coffeescript.org/">CoffeeScript</a> (a language that compiles to JavaScript), and <a href="http://edgeguides.rubyonrails.org/working_with_javascript_in_rails.html">how Rails works with these</a>. Here are a few:</p>
+
+<ul>
+<li><a href="http://edgeguides.rubyonrails.org/working_with_javascript_in_rails.html">Rails Guide on AJAX</a></li>
+<li><a href="http://it-ebooks.info/book/274/">JavaScript: The Good Parts (ebook)</a></li>
+<li><a href="http://api.jquery.com/">jQuery API</a></li>
+<li><a href="http://coffeescript.org/">CoffeeScript</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Learning to Work Efficiently With Vim]]></title>
+    <link href="http://blog.roberteshleman.com/2014/07/18/learning-to-work-efficiently-with-vim/"/>
+    <updated>2014-07-18T14:31:09-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/07/18/learning-to-work-efficiently-with-vim</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>Until a few months ago, <a href="http://en.wikipedia.org/wiki/Vim_%28text_editor%29">Vim</a> was a program I had never considered using. I had always perceived Vim to be an editor with a steep learning curve that wasn’t worth my time as a web programmer. It was a tool, I thought, used mostly by people who spent their time writing obscure shell scripts or coding the Linux kernel in C.</p>
+
+<p>As it turns out, I was wrong, and I’m glad I was.</p>
+
+<!-- More -->
+
+
+<h2>Overcoming the Learning Curve</h2>
+
+<p>Now, that’s not to say that Vim’s learning curve isn’t steep — the program can be notoriously unforgiving to a new user. But once I learned a few basic commands to move around, and understood the <a href="http://vimdoc.sourceforge.net/htmldoc/intro.html#vim-modes-intro">different modes</a>, Vim became much easier to work with.</p>
+
+<p>Encouraged by one of my instructors at Metis, I spent up to an hour at the beginning of each day practicing with <a href="http://linuxcommand.org/man_pages/vimtutor1.html">vimtutor</a>. (There are also a number of <a href="http://vim-adventures.com/">web-based</a> <a href="http://www.openvim.com/tutorial.html">tutorials</a>, and this <a href="http://www.viemu.com/vi-vim-cheat-sheet.gif">keyboard layout cheat-sheet</a>.)</p>
+
+<p>After using vimtutor each morning, I then challenged myself to code in Vim throughout the day. At first, I worked much more slowly as I learned different commands and occasionally googled for help. After a few days, though, I could tell that I was beginning to get the hang of it. It was amazing to see the impact of using they keyboard to navigate, without switching over to the mouse every few minutes.</p>
+
+<h2>Hard Work’s Rewards</h2>
+
+<p>Having now spent a few months using Vim, I’m really beginning to appreciate its power. Using <a href="https://code.google.com/p/macvim/">MacVim</a> and a few extensions (for syntax highlighting, file-switching, <em>et al.</em>), I now have most of the key features of a text editor like <a href="http://www.sublimetext.com/">Sublime</a> and still have the additional power of Vim. Overall, my workflow is much more efficient.</p>
+
+<p>Needless to say, Vim has quickly become an indispensable tool, even (especially?) for a web developer like me.</p>
+
+<h2>A Not-Nearly-Exhaustive List of Vim Magic</h2>
+
+<p>Below are just a few of the Vim shortcuts that I’ve found especially useful as I’ve been learning Rails.</p>
+
+<h3>Vanilla Vim Shortcuts</h3>
+
+<ul>
+<li><code>c</code> is for “change”; it deletes in the given direction then enters insert mode (i.e., <code>cw</code> to change to the end of the word, or <code>c$</code> to change to the end of the line)</li>
+<li><code>d</code> deletes in the given direction (i.e., <code>dw</code> to delete to the end of the word); <code>D</code> deletes to the end of the line</li>
+<li><code>o</code> places you in insert mode in a new line below the current line; <code>O</code> does the same above the current line</li>
+<li><code>:!</code> lets you run a terminal command from within Vim, helpful for running Ruby files (like <code>:!rb filename.rb</code>)</li>
+<li><code>=</code> automatically indents lines in the given direction. <code>gg=G</code> automatically indents the whole file.</li>
+</ul>
+
+
+<h3>Multi-Window Commnds</h3>
+
+<ul>
+<li><code>:split</code> for a horizontal window split (optionally append a filename to open)</li>
+<li><code>:vsplit</code> for a vertical window split (optionally append a filename to open)</li>
+<li><code>Ctl-W</code> commands allow moving between split windows</li>
+<li><code>Ctl-W Ctl-W</code> switches between active split windows</li>
+<li><code>Ctl-W [h,j,k,l]</code> moves to the split window in the given direction</li>
+</ul>
+
+
+<h3>Vim Rails Magic</h3>
+
+<p><em>This magic comes courtesy of the <code>rails.vim</code> extension, available <a href="https://github.com/tpope/vim-rails">here</a>.</em></p>
+
+<ul>
+<li><code>:Rinitializer</code> jumps to the routes file</li>
+<li><code>:Rmigration</code> jumps to the most recent migration file</li>
+<li><code>:R</code> from inside a view jumps you to the corresponding action within the appropriate controller and vice-versa</li>
+<li><code>:Rcontroller wombats</code> jumps to the “wombats” controller</li>
+<li><code>:Rview wombats/index.html.erb</code> does the same for the view</li>
+<li><code>:Rmodel wombat</code> does the same for the model</li>
+<li>Append <code>!</code> to any of the last three to create the file with a boilerplate class definition</li>
+</ul>
+
+
+<h3>File Switching</h3>
+
+<ul>
+<li><code>:e</code> followed by a path/filename switches to a different file</li>
+<li><code>Ctl-p</code> (via this <a href="https://github.com/kien/ctrlp.vim">extension</a>) has been a <strong>huge</strong> time-saver with its fuzzy filename matching.</li>
+</ul>
+
+
+<h3>Others?</h3>
+
+<p>This is just a short list. Feel fee to tweet me your other favorites <a href="https://twitter.com/RobertEshleman">@RobertEshleman</a> or comment below. =)</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Learning Rails via Error-Driven Development]]></title>
+    <link href="http://blog.roberteshleman.com/2014/07/09/learning-rails-via-error-driven-development/"/>
+    <updated>2014-07-09T13:10:52-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/07/09/learning-rails-via-error-driven-development</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>As we&rsquo;ve started learning Rails the past two weeks, one of our instructors, <a href="https://twitter.com/halogenandtoast">Goose</a>, has been encouraging us to code using an approach he calls <strong><a href="http://www.halogenandtoast.com/error-driven-development/">Error-Driven Development</a></strong>.</p>
+
+<p>Much like its older cousin, <strong><a href="http://en.wikipedia.org/wiki/Test-driven_development">Test-Driven Development</a></strong>, an error-driven approach follows a short, incremental, feedback-driven cycle when coding. As a new Rails developer, the habits built through Error-Driven Development will help prepare me to learn Test-Driven Development in the future.</p>
+
+<!-- More -->
+
+
+<h2>What is Error-Driven Development?</h2>
+
+<p>To develop a feature using Error-Driven Development, we first cause Rails to generate an error. Then, we make the simplest possible change to the code in order to resolve the error. This, in turn, will raise another error, and we can iterate by solving these incremental errors until our feature is complete.</p>
+
+<h2>An Example</h2>
+
+<p>At Metis, we&rsquo;ve been building a sample photo gallery app, so we&rsquo;ll walk through what Error-Driven Development might look like for getting our first page working with some boilerplate text.</p>
+
+<p>(These instructions are working from a vanilla Rails app generated with <code>rails new your-app-name-here</code>.)</p>
+
+<p>To start, we need to raise an error, so we&rsquo;ll navigate to the <code>/galleries</code> path (which will eventually be our first page) in the browser. Rails helpfully tells us:</p>
+
+<blockquote><p>Routing Error: No route matches [GET] &ldquo;/galleries&rdquo;</p></blockquote>
+
+<p>Of course, this seems silly, because we knew there was no route defined. But this message also tells us that we&rsquo;ve created the Rails project correctly and that the server is working.</p>
+
+<p>Now that we have an error, our next step is to make the smallest change to the code that fixes the error. We can do this by adding a single line to <code>config/routes.rb</code>:</p>
+
+<p><code>ruby
+resources :galleries, only: [:index]
+</code></p>
+
+<p>That&rsquo;s it. One line of code to fix this error. When we refresh the page, Rails says:</p>
+
+<blockquote><p>Routing Error: uninitialized constant GalleriesController</p></blockquote>
+
+<p>Great. We&rsquo;re making progress. To solve this error, we create the <code>app/controllers/galleries_controller.rb</code> file and add this code to define the controller:</p>
+
+<p><code>ruby
+class GalleriesController &lt; ApplicationController
+end
+</code></p>
+
+<p>Notice that we haven&rsquo;t yet defined any actions for this controller. After refreshing, Rails cheerfully greets us with:</p>
+
+<blockquote><p>Unknown action: The action &lsquo;index&rsquo; could not be found for GalleriesController</p></blockquote>
+
+<p>We correct this by defining the <code>index</code> action in the galleries controller:</p>
+
+<p><code>ruby
+def index
+end
+</code></p>
+
+<p>Refreshing again, we expect Rails to complain about a missing view. And we see (shortened for clarity):</p>
+
+<blockquote><p>Template is missing: Missing template galleries/index</p></blockquote>
+
+<p>So we create <code>app/views/galleries/index.html.erb</code> and add some boilerplate “Hello, world!” text to see that it&rsquo;s working. In the browser, we finally see:</p>
+
+<blockquote><p>Hello, world!</p></blockquote>
+
+<h2>Advantages and Reflections</h2>
+
+<p>One advantage of using this technique to learn Rails is that it makes apparent how Rails processes a request. For me, as a programmer who is new to Rails, this helps clarify a lot of the framework&rsquo;s conventions that aren&rsquo;t necessarily transparent (like which class names are pluralized, capitalized, etc.).</p>
+
+<p>Additionally, as I&rsquo;ve begun to get more comfortable with Rails, I can begin to anticipate what error I&rsquo;ll receive as I make each change to my code. If a different error appears, it&rsquo;s usually a sign that I made the wrong change or mistyped something. These mistakes are much easier to find when I&rsquo;ve only changed a few lines of code; had I made multiple changes at the same time, finding that error could take longer than coding did.</p>
+
+<p>In just a couple of weeks, using Error-Driven Development has completely changed the way I code. I&rsquo;m programming in a more logical, incremental way, and I&rsquo;m paying closer attention to my error messages. I can already see how learning Rails with an error-driven approach will provide a natural transition to using Test-Driven Development as I continue to grow as a developer.</p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -1,0 +1,720 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Ruby | Robert Eshleman]]></title>
+  <link href="http://blog.roberteshleman.com/categories/ruby/atom.xml" rel="self"/>
+  <link href="http://blog.roberteshleman.com/"/>
+  <updated>2014-08-21T17:00:06-04:00</updated>
+  <id>http://blog.roberteshleman.com/</id>
+  <author>
+    <name><![CDATA[Robert Eshleman]]></name>
+    <email><![CDATA[hello@roberteshleman.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Using Rails Namespaces for Admin Actions]]></title>
+    <link href="http://blog.roberteshleman.com/2014/08/14/using-rails-namespaces-for-admin-actions/"/>
+    <updated>2014-08-14T17:17:56-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/08/14/using-rails-namespaces-for-admin-actions</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>Rails has several strategies to help us separate concerns in our applications. We use separate files and directories for models, views and controllers, for example, and we can nest routes based on how the resources are related to each other.</p>
+
+<p>In addition, Rails permits the use of <a href="http://en.wikipedia.org/wiki/Namespace">namespaces</a> to organize our resources and prevent naming conflicts. In this post, we&rsquo;ll take a look at why this feature is useful by implementing a namespace for admin actions in a sample <a href="http://craigslist.org">Craigslist</a> clone Rails app.</p>
+
+<!--More-->
+
+
+<h2>Routing</h2>
+
+<p>In our version of Craigslist, our app has many categories (i.e., &ldquo;bikes,&rdquo; &ldquo;boats,&rdquo; &ldquo;missed connections,&rdquo; etc.), each with many posts. To start out, our routes look something like this:</p>
+
+<p><code>ruby
+resources :categories, only: [:index, :show] do
+  resources :posts, only: [:new, :create, :show]
+end
+</code></p>
+
+<p>We want to give admin users the ability to add categories, so we add the following to our <code>routes.rb</code>:</p>
+
+<p><code>ruby
+namespace :admin do
+  resources :categories, only: [:new, :create]
+end
+</code></p>
+
+<p>This gives us routes under the path <code>/admin/categories</code> which are directed to <code>Admin::CategoriesController</code>.</p>
+
+<h2>The Controller</h2>
+
+<p>There are a few considerations we have for our namespaced controller.</p>
+
+<p>First, Rails expects this controller file to exist in an <code>admin/</code> folder within <code>app/controllers/</code> (i.e., at <code>app/controllers/admin/categories_controller.rb</code>).</p>
+
+<p>Second, because the controller is named within the <code>admin</code> namespace, we use the <a href="http://en.wikipedia.org/wiki/Scope_resolution_operator">scope resolution operator</a> to define the controller class:</p>
+
+<p><code>ruby
+class Admin::CategoriesController &lt; ApplicationController
+  # Methods omitted
+end
+</code></p>
+
+<p>From there, we can define our <code>new</code> and <code>create</code> actions as we normally would.</p>
+
+<p>Note, also, that we still have our non-namespaced <code>categories</code> routes (for <code>show</code> and <code>index</code>) that direct requests to the standard <code>CategoriesController</code> in <code>app/controllers/</code>.</p>
+
+<h2>Views</h2>
+
+<p>Views that correspond to our <code>Admin::CategoriesController</code> actions are namespaced just like the controller is. When Rails needs these view files, it will look in the <code>app/views/admin/</code> subfolder.</p>
+
+<p>Additionally, we&rsquo;ll need to point our path helpers to the right place for namespaced routes. For example, we&rsquo;ll use paths like <code>new_admin_category_path</code> and <code>form_for [:admin, @category]</code> in our views.</p>
+
+<h2>Restricting Access to Admin Actions</h2>
+
+<p>So far, we have our admin actions working within the namespace, but we&rsquo;re not actually restricting access to these actions.</p>
+
+<p>There are a couple of approaches here. We&rsquo;ll start by adding a simple <code>before_action</code> to the <code>Admin::CategoriesController</code>:</p>
+
+<p>```ruby
+class Admin::CategoriesController &lt; ApplicationController
+  before_action :require_admin</p>
+
+<p>  # Methods omitted</p>
+
+<p>  def require_admin</p>
+
+<pre><code>unless current_user.admin?
+  redirect_to root_path
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>We have a <code>current_user</code> method already defined by our authentication system. (I&rsquo;ve been quite happy using <a href="https://github.com/halogenandtoast/monban">Monban</a> recently.) Additionally, our <code>User</code> model has a boolean <code>admin</code> field, so we can simply redirect if the user isn&rsquo;t an admin.</p>
+
+<h2>Refactoring</h2>
+
+<p>This approach works, but it&rsquo;s not very flexible. If we add other admin actions (say, for filtering posts flagged as spam), we have to redefine this <code>require_admin</code> method in each namespaced controller.</p>
+
+<p>One solution might be to define the <code>require_admin</code> method in our <code>ApplicationController</code>. That&rsquo;s a step in the right direction, but we would have to remember to add the <code>before_action</code> to each admin controller; these controllers wouldn&rsquo;t be secure by default.</p>
+
+<p>The solution I prefer is to define a separate class (in <code>app/controllers/</code>) called <code>AdminController</code> that inherits from <code>ApplicationController</code>:</p>
+
+<p>```ruby
+class AdminController &lt; ApplicationController
+  before_action :require_admin</p>
+
+<p>  def require_admin</p>
+
+<pre><code>unless current_user.admin?
+  redirect_to root_path
+end
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Now, each namespaced admin controller can inherit directly (and quite appropriately) from <code>AdminController</code>. Since we&rsquo;ve defined the <code>before_action</code> in <code>AdminController</code>, actions in any sub-classed controller will be restricted to admin users by default.</p>
+
+<p>We no longer need to list the <code>before_action</code> or define a <code>require_admin</code> method in each of our namespaced controllers; they just inherit from <code>AdminController</code>:</p>
+
+<p><code>ruby
+class Admin::CategoriesController &lt; AdminController
+  # Methods omitted
+end
+</code></p>
+
+<p>Simple, effective, and scalable. By extracting the <code>before_action</code> and <code>require_admin</code> logic into a separate parent controller, we&rsquo;ve made it startlingly easy to add new admin actions in the future.</p>
+
+<p>We&rsquo;ll thank ourselves later.</p>
+
+<h2>Resources</h2>
+
+<ul>
+<li><a href="http://guides.rubyonrails.org/routing.html#controller-namespaces-and-routing">Rails Guide on Routing</a></li>
+<li><a href="https://github.com/halogenandtoast/monban">Monban User Authentication</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Learning to Work Efficiently With Vim]]></title>
+    <link href="http://blog.roberteshleman.com/2014/07/18/learning-to-work-efficiently-with-vim/"/>
+    <updated>2014-07-18T14:31:09-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/07/18/learning-to-work-efficiently-with-vim</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>Until a few months ago, <a href="http://en.wikipedia.org/wiki/Vim_%28text_editor%29">Vim</a> was a program I had never considered using. I had always perceived Vim to be an editor with a steep learning curve that wasn’t worth my time as a web programmer. It was a tool, I thought, used mostly by people who spent their time writing obscure shell scripts or coding the Linux kernel in C.</p>
+
+<p>As it turns out, I was wrong, and I’m glad I was.</p>
+
+<!-- More -->
+
+
+<h2>Overcoming the Learning Curve</h2>
+
+<p>Now, that’s not to say that Vim’s learning curve isn’t steep — the program can be notoriously unforgiving to a new user. But once I learned a few basic commands to move around, and understood the <a href="http://vimdoc.sourceforge.net/htmldoc/intro.html#vim-modes-intro">different modes</a>, Vim became much easier to work with.</p>
+
+<p>Encouraged by one of my instructors at Metis, I spent up to an hour at the beginning of each day practicing with <a href="http://linuxcommand.org/man_pages/vimtutor1.html">vimtutor</a>. (There are also a number of <a href="http://vim-adventures.com/">web-based</a> <a href="http://www.openvim.com/tutorial.html">tutorials</a>, and this <a href="http://www.viemu.com/vi-vim-cheat-sheet.gif">keyboard layout cheat-sheet</a>.)</p>
+
+<p>After using vimtutor each morning, I then challenged myself to code in Vim throughout the day. At first, I worked much more slowly as I learned different commands and occasionally googled for help. After a few days, though, I could tell that I was beginning to get the hang of it. It was amazing to see the impact of using they keyboard to navigate, without switching over to the mouse every few minutes.</p>
+
+<h2>Hard Work’s Rewards</h2>
+
+<p>Having now spent a few months using Vim, I’m really beginning to appreciate its power. Using <a href="https://code.google.com/p/macvim/">MacVim</a> and a few extensions (for syntax highlighting, file-switching, <em>et al.</em>), I now have most of the key features of a text editor like <a href="http://www.sublimetext.com/">Sublime</a> and still have the additional power of Vim. Overall, my workflow is much more efficient.</p>
+
+<p>Needless to say, Vim has quickly become an indispensable tool, even (especially?) for a web developer like me.</p>
+
+<h2>A Not-Nearly-Exhaustive List of Vim Magic</h2>
+
+<p>Below are just a few of the Vim shortcuts that I’ve found especially useful as I’ve been learning Rails.</p>
+
+<h3>Vanilla Vim Shortcuts</h3>
+
+<ul>
+<li><code>c</code> is for “change”; it deletes in the given direction then enters insert mode (i.e., <code>cw</code> to change to the end of the word, or <code>c$</code> to change to the end of the line)</li>
+<li><code>d</code> deletes in the given direction (i.e., <code>dw</code> to delete to the end of the word); <code>D</code> deletes to the end of the line</li>
+<li><code>o</code> places you in insert mode in a new line below the current line; <code>O</code> does the same above the current line</li>
+<li><code>:!</code> lets you run a terminal command from within Vim, helpful for running Ruby files (like <code>:!rb filename.rb</code>)</li>
+<li><code>=</code> automatically indents lines in the given direction. <code>gg=G</code> automatically indents the whole file.</li>
+</ul>
+
+
+<h3>Multi-Window Commnds</h3>
+
+<ul>
+<li><code>:split</code> for a horizontal window split (optionally append a filename to open)</li>
+<li><code>:vsplit</code> for a vertical window split (optionally append a filename to open)</li>
+<li><code>Ctl-W</code> commands allow moving between split windows</li>
+<li><code>Ctl-W Ctl-W</code> switches between active split windows</li>
+<li><code>Ctl-W [h,j,k,l]</code> moves to the split window in the given direction</li>
+</ul>
+
+
+<h3>Vim Rails Magic</h3>
+
+<p><em>This magic comes courtesy of the <code>rails.vim</code> extension, available <a href="https://github.com/tpope/vim-rails">here</a>.</em></p>
+
+<ul>
+<li><code>:Rinitializer</code> jumps to the routes file</li>
+<li><code>:Rmigration</code> jumps to the most recent migration file</li>
+<li><code>:R</code> from inside a view jumps you to the corresponding action within the appropriate controller and vice-versa</li>
+<li><code>:Rcontroller wombats</code> jumps to the “wombats” controller</li>
+<li><code>:Rview wombats/index.html.erb</code> does the same for the view</li>
+<li><code>:Rmodel wombat</code> does the same for the model</li>
+<li>Append <code>!</code> to any of the last three to create the file with a boilerplate class definition</li>
+</ul>
+
+
+<h3>File Switching</h3>
+
+<ul>
+<li><code>:e</code> followed by a path/filename switches to a different file</li>
+<li><code>Ctl-p</code> (via this <a href="https://github.com/kien/ctrlp.vim">extension</a>) has been a <strong>huge</strong> time-saver with its fuzzy filename matching.</li>
+</ul>
+
+
+<h3>Others?</h3>
+
+<p>This is just a short list. Feel fee to tweet me your other favorites <a href="https://twitter.com/RobertEshleman">@RobertEshleman</a> or comment below. =)</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Learning Rails via Error-Driven Development]]></title>
+    <link href="http://blog.roberteshleman.com/2014/07/09/learning-rails-via-error-driven-development/"/>
+    <updated>2014-07-09T13:10:52-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/07/09/learning-rails-via-error-driven-development</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>As we&rsquo;ve started learning Rails the past two weeks, one of our instructors, <a href="https://twitter.com/halogenandtoast">Goose</a>, has been encouraging us to code using an approach he calls <strong><a href="http://www.halogenandtoast.com/error-driven-development/">Error-Driven Development</a></strong>.</p>
+
+<p>Much like its older cousin, <strong><a href="http://en.wikipedia.org/wiki/Test-driven_development">Test-Driven Development</a></strong>, an error-driven approach follows a short, incremental, feedback-driven cycle when coding. As a new Rails developer, the habits built through Error-Driven Development will help prepare me to learn Test-Driven Development in the future.</p>
+
+<!-- More -->
+
+
+<h2>What is Error-Driven Development?</h2>
+
+<p>To develop a feature using Error-Driven Development, we first cause Rails to generate an error. Then, we make the simplest possible change to the code in order to resolve the error. This, in turn, will raise another error, and we can iterate by solving these incremental errors until our feature is complete.</p>
+
+<h2>An Example</h2>
+
+<p>At Metis, we&rsquo;ve been building a sample photo gallery app, so we&rsquo;ll walk through what Error-Driven Development might look like for getting our first page working with some boilerplate text.</p>
+
+<p>(These instructions are working from a vanilla Rails app generated with <code>rails new your-app-name-here</code>.)</p>
+
+<p>To start, we need to raise an error, so we&rsquo;ll navigate to the <code>/galleries</code> path (which will eventually be our first page) in the browser. Rails helpfully tells us:</p>
+
+<blockquote><p>Routing Error: No route matches [GET] &ldquo;/galleries&rdquo;</p></blockquote>
+
+<p>Of course, this seems silly, because we knew there was no route defined. But this message also tells us that we&rsquo;ve created the Rails project correctly and that the server is working.</p>
+
+<p>Now that we have an error, our next step is to make the smallest change to the code that fixes the error. We can do this by adding a single line to <code>config/routes.rb</code>:</p>
+
+<p><code>ruby
+resources :galleries, only: [:index]
+</code></p>
+
+<p>That&rsquo;s it. One line of code to fix this error. When we refresh the page, Rails says:</p>
+
+<blockquote><p>Routing Error: uninitialized constant GalleriesController</p></blockquote>
+
+<p>Great. We&rsquo;re making progress. To solve this error, we create the <code>app/controllers/galleries_controller.rb</code> file and add this code to define the controller:</p>
+
+<p><code>ruby
+class GalleriesController &lt; ApplicationController
+end
+</code></p>
+
+<p>Notice that we haven&rsquo;t yet defined any actions for this controller. After refreshing, Rails cheerfully greets us with:</p>
+
+<blockquote><p>Unknown action: The action &lsquo;index&rsquo; could not be found for GalleriesController</p></blockquote>
+
+<p>We correct this by defining the <code>index</code> action in the galleries controller:</p>
+
+<p><code>ruby
+def index
+end
+</code></p>
+
+<p>Refreshing again, we expect Rails to complain about a missing view. And we see (shortened for clarity):</p>
+
+<blockquote><p>Template is missing: Missing template galleries/index</p></blockquote>
+
+<p>So we create <code>app/views/galleries/index.html.erb</code> and add some boilerplate “Hello, world!” text to see that it&rsquo;s working. In the browser, we finally see:</p>
+
+<blockquote><p>Hello, world!</p></blockquote>
+
+<h2>Advantages and Reflections</h2>
+
+<p>One advantage of using this technique to learn Rails is that it makes apparent how Rails processes a request. For me, as a programmer who is new to Rails, this helps clarify a lot of the framework&rsquo;s conventions that aren&rsquo;t necessarily transparent (like which class names are pluralized, capitalized, etc.).</p>
+
+<p>Additionally, as I&rsquo;ve begun to get more comfortable with Rails, I can begin to anticipate what error I&rsquo;ll receive as I make each change to my code. If a different error appears, it&rsquo;s usually a sign that I made the wrong change or mistyped something. These mistakes are much easier to find when I&rsquo;ve only changed a few lines of code; had I made multiple changes at the same time, finding that error could take longer than coding did.</p>
+
+<p>In just a couple of weeks, using Error-Driven Development has completely changed the way I code. I&rsquo;m programming in a more logical, incremental way, and I&rsquo;m paying closer attention to my error messages. I can already see how learning Rails with an error-driven approach will provide a natural transition to using Test-Driven Development as I continue to grow as a developer.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Models, Views, and Controllers, Oh My!: Anatomy of a Rails App]]></title>
+    <link href="http://blog.roberteshleman.com/2014/07/07/models-views-and-controllers-oh-my-anatomy-of-a-rails-app/"/>
+    <updated>2014-07-07T14:14:17-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/07/07/models-views-and-controllers-oh-my-anatomy-of-a-rails-app</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>With <a href="http://www.youtube.com/watch?v=NecK4MwOfeI">apologies to the late Judy Garland</a>, let&rsquo;s start out by acknowledging that the <a href="http://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller">Model-View-Controller architecture</a> isn&rsquo;t nearly as frightening as lions, tigers, or bears. After all, we <em>are</em> wearing our Ruby slippers.</p>
+
+<p>*<em>crickets</em>*</p>
+
+<p>Anyway, bad jokes aside, this way of organizing an application <em>can</em> seem intimidating to the uninitiated. In this post, we’ll take a look at what MVC means, and what this architecture looks like in a Rails application.</p>
+
+<!-- More -->
+
+
+<h2>Overview</h2>
+
+<p>At a high level, the Model-View-Controller architecture allows us to isolate logic into different categories (and files), based on that code’s role in a program. This standard structure also makes it easier to read through existing code, because you know where to find specific logic based on what it does.</p>
+
+<p>We’ll start with some basic definitions:</p>
+
+<ul>
+<li><strong>Models</strong> contain the <em>business logic</em> — this is the code that maps the real-world problem space to its representation in the computer.</li>
+<li><strong>Views</strong> contain <em>presentation logic</em> — or the code that determines how data will be displayed to the user.</li>
+<li><strong>Controllers</strong> contain <em>control logic</em> — the connective tissue that makes models and views work together.</li>
+</ul>
+
+
+<p>Let&rsquo;s explore these components in more detail.</p>
+
+<h2>Models</h2>
+
+<p>A model contains all of the code that matches the behavior and state of a real-world entity. This is what we call the &ldquo;business logic&rdquo; — code that is motivated by the the actual &ldquo;things&rdquo; we&rsquo;re modeling.</p>
+
+<p>When matching our business logic to the problem space, we follow a convention called “Fat Models, Skinny Controllers.” This means that controllers should not contain any logic related to modeling the real world — that’s solely the job of the models. Instead, controllers should only contain the basic code required to construct and send a response to the user.</p>
+
+<p>Often, but not always, models will correspond to an entity that we want to persist in the database. For these models, we use an <a href="http://en.wikipedia.org/wiki/Object-relational_mapping">object-relational mapping</a> (or ORM), which matches database fields to data stored in Ruby objects. This type of mapping provides methods that allow us to easily persist our objects in the database.</p>
+
+<p>In Rails, models are stored in the <code>app/models/</code> directory, and named in the singular form, like <code>gallery.rb</code>. ORM model classes inherit functionality from <code>ActiveRecord::Base</code>.</p>
+
+<h2>Views</h2>
+
+<p>Views contain all of the code that is required to display information to the user. In Rails, these files often take the form of an HTML file with embedded Ruby:</p>
+
+<p>```erb</p>
+
+<h1><%= @user.name %></h1>
+
+
+<p>```</p>
+
+<p>These <code>.html.erb</code> files are stored in a <code>app/views/</code> inside a subdirectory that matches the pluralized model name. So the “index” view for an “image” model would be located at <code>app/views/images/index.html.erb</code>.</p>
+
+<h3>Layouts</h3>
+
+<p>Rails also uses layouts that can contain the boilerplate HTML code used for every page. This default file is located at <code>app/views/layouts/application.html.erb</code>, and all other views are rendered where the <code>&lt;%= yield %&gt;</code> call appears in the layout.</p>
+
+<h3>Guidelines for Views</h3>
+
+<p>The Ruby logic in views should be somewhat simple and restricted as much as possible to presenting information. There are a few guidelines here:</p>
+
+<ul>
+<li><strong>Don’t</strong> assign variables</li>
+<li><strong>Don’t</strong> define classes</li>
+<li><strong>Don’t</strong> define methods</li>
+<li><strong>Don’t</strong> define constants</li>
+<li><strong>Avoid</strong> complex conditionals (<code>if</code>, <code>case</code>, etc.)</li>
+<li><strong>Avoid</strong> complex method calls</li>
+</ul>
+
+
+<h2>Controllers</h2>
+
+<p>The best analogy I’ve heard for how controllers work is a comparison to an old-school (read: before my time) <a href="http://en.wikipedia.org/wiki/Telephone_switchboard">telephone switchboard</a> operator. When a caller needs to reach another person, they place their request with the switchboard operator, who connects the right cables so the call can be completed.</p>
+
+<p>Controllers in Rails work similarly. When a user submits a request to a Rails application, that request it is <strong>routed</strong> to a specific <strong>action</strong> method within a controller. (More on these in a moment.) This method contains logic that collects information (often — but not necessarily — using a model) and passes that data to a view. Finally, the controller sends the rendered view to the user.</p>
+
+<p>Each request sent to the server will only be handled by a single action within a single controller.</p>
+
+<h3>Routes</h3>
+
+<p>Routes are not technically part of the MVC architecture, but they play a key role in how controllers work. A route defines a path that the user can use to interact with an application. Rails defines routes in the <code>config/routes.rb</code> file, using the following syntax:</p>
+
+<p><code>ruby
+verb "/route" =&gt; "controller#action"
+</code></p>
+
+<p>In this syntax:</p>
+
+<ul>
+<li><code>verb</code> represents one of the <a href="http://www.restapitutorial.com/lessons/httpmethods.html">HTTP verbs</a></li>
+<li><code>"/route"</code> is the URL path, relative to the application root, like <code>/gallery/1/image/45</code></li>
+<li><code>controller</code> is the name of a specific controller</li>
+<li>and <code>action</code> is the name of a specific action method within that controller</li>
+</ul>
+
+
+<h3>Actions</h3>
+
+<p>An action is a method in a controller that a route points to. When called, an action gathers the data necessary to render a view, and then returns a rendered view to the user.</p>
+
+<p>In Rails, the convention is to use only these <a href="http://guides.rubyonrails.org/routing.html#crud-verbs-and-actions">seven actions</a>, which represent the standard ways of interacting with a resource:</p>
+
+<ul>
+<li>Index — display some or all resources of that type</li>
+<li>Show — display a single resource</li>
+<li>New — display a form for creating a new resource</li>
+<li>Create — actually create that resource</li>
+<li>Edit — display a form for changing a resource</li>
+<li>Update — actually change that resource</li>
+<li>Destroy — delete a resource</li>
+</ul>
+
+
+<p>Rails even provides an easy, standard way to define routes to all of these resources in <code>config/routes.rb</code>. For a sample photo gallery application, this might look like:</p>
+
+<p><code>ruby
+resources :galleries
+</code></p>
+
+<p>This provides the following routes (table adapted from the Rails <a href="http://guides.rubyonrails.org/routing.html#crud-verbs-and-actions">Routing Guide</a>):</p>
+
+<table>
+<thead>
+<tr>
+<th><strong>HTTP Verb</strong> </th>
+<th> <strong>Path</strong> </th>
+<th> <strong>Controller#Action</strong> </th>
+<th> <strong>Used for</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET </td>
+<td> /galleries </td>
+<td> galleries#index </td>
+<td> display a list of all galleries</td>
+</tr>
+<tr>
+<td>GET </td>
+<td> /galleries/new </td>
+<td> galleries#new </td>
+<td> display a form for creating a new gallery</td>
+</tr>
+<tr>
+<td>POST </td>
+<td> /galleries </td>
+<td> galleries#create </td>
+<td> create a new gallery</td>
+</tr>
+<tr>
+<td>GET </td>
+<td> /galleries/:id </td>
+<td> galleries#show </td>
+<td> display a specific gallery</td>
+</tr>
+<tr>
+<td>GET </td>
+<td> /galleries/:id/edit </td>
+<td> galleries#edit </td>
+<td> display a form for editing a gallery</td>
+</tr>
+<tr>
+<td>PATCH/PUT </td>
+<td> /galleries/:id </td>
+<td> galleries#update </td>
+<td> update a specific gallery</td>
+</tr>
+<tr>
+<td>DELETE </td>
+<td> /galleries/:id </td>
+<td> galleries#destroy </td>
+<td> delete a specific gallery</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>You can also use the <code>resources</code> method to quickly define a subset of these routes:</p>
+
+<p>```ruby</p>
+
+<h1>Only</h1>
+
+<p>resources :galleries, only: [:index, :show]
+```</p>
+
+<p>```ruby</p>
+
+<h1>Except</h1>
+
+<p>resources :galleries, except: [:edit, :update, :destroy]
+```</p>
+
+<h2>Further Reading</h2>
+
+<p>The <a href="http://guides.rubyonrails.org/">Rails Guides</a> contain a ton of additional information about how MVC is implemented in Rails, including API references, usage, and code examples. There are specific pages covering <a href="http://guides.rubyonrails.org/active_record_basics.html">models</a>, <a href="http://guides.rubyonrails.org/layouts_and_rendering.html">views</a>, <a href="http://guides.rubyonrails.org/action_controller_overview.html">controllers</a>, and <a href="http://guides.rubyonrails.org/routing.html">routing</a>. The <a href="http://api.rubyonrails.org/">Rails API</a> is also helpful for more precise information about available methods.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Creating a Basic Web App With Ruby and Sinatra]]></title>
+    <link href="http://blog.roberteshleman.com/2014/06/26/creating-a-basic-web-app-with-ruby-and-sinatra/"/>
+    <updated>2014-06-26T12:45:25-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/06/26/creating-a-basic-web-app-with-ruby-and-sinatra</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>This week at Metis, we’re using Ruby and <a href="http://www.sinatrarb.com">Sinatra</a> to get started with some basic dynamic web programming as a stepping stone to Rails. At its core, Sinatra is a Ruby gem that allows you to specify how an app will respond to different <a href="http://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods">http requests</a> (<code>GET</code>, <code>POST</code>, etc.) and routes (the part of the URL after the domain, like <code>/</code> or <code>/blog</code> or <code>/blog/post/123</code>).</p>
+
+<p>In this post, we’ll walk through creating a basic &ldquo;hello world&rdquo;-style app that offers a greeting to the user, customized based on the url.</p>
+
+<!-- MORE -->
+
+
+<h2>Setting up Sinatra</h2>
+
+<p>Since Sinatra is a gem, we’ll start by installing it with <code>gem install sinatra</code> in the terminal. We’ll also create a separate directory for this project (<code>mkdir hello_sinatra</code>).</p>
+
+<p>In a new Ruby file (I’m using <code>hello_sinatra.rb</code>), add the line <code>require "sinatra"</code> so we can begin using the gem. We’re ready to go!</p>
+
+<h2>Hello, World!</h2>
+
+<p>To start, we just want the app to print out &ldquo;Hello, world!&rdquo; when we navigate to the domain’s base directory in the browser. That’s the &ldquo;root route&rdquo; (say that 10 times fast), or the domain name without any path at the end (like <code>http://your_domain.com/</code>).</p>
+
+<p>In Sinatra, we do this by calling <a href="http://www.sinatrarb.com/intro.html#Routes">a method</a> that corresponds to the HTTP request type we want to recognize (in this case, <code>get</code>), and we pass it the route as an argument (in this case, <code>"/"</code>).</p>
+
+<p>This method also takes a block, and the return value of the block is sent as the response to the web browser. Usually this will be a string containing HTML code, but we’ll start with simple text for now.</p>
+
+<p>Here’s what it looks like:</p>
+
+<p>``` ruby
+require &ldquo;sinatra&rdquo;</p>
+
+<p>get &ldquo;/&rdquo; do
+  &ldquo;Hello, world!&rdquo;
+end
+```</p>
+
+<h3>Test It Out</h3>
+
+<p>We can test it out in our browser by running <code>ruby hello_sinatra.rb</code>. This will launch a local server using port 4567 so we can load the app in a browser. Navigate to <code>localhost:4567</code> in your browser to check it out. If everything’s working, you’ll see &ldquo;Hello, World!&rdquo; in plain text.</p>
+
+<p>Congratulations! You’ve built a simple web app!</p>
+
+<h2>Adding URL Parameters</h2>
+
+<p>This is a nice proof-of-concept, but it doesn’t really <em>do</em> anything yet. Let’s change it up by printing different text based on the URL route that the user types in.</p>
+
+<p>Sinatra allows us to specify parameters that take a value typed within the URL by the user. Parameters are specified with a <code>:symbol</code> in the route. So we could define a new route to dynamically change the greeting based on the URL:</p>
+
+<p><code>ruby
+get "/hello/:name" do
+  @greeting_name = params[:name]
+  "Hello, #{@greeting_name.capitalize}!"
+end
+</code></p>
+
+<p>We’ve added a couple of things here. Notice the symbol <code>:name</code> in the route — this is like a variable. Whatever is typed in the URL after <code>/hello/</code> will automatically be added by Sinatra to a hash called <code>params</code>. On the second line, we’re assigning that string from the <code>params</code> hash to an instance variable called <code>@greeting_name</code>. Finally, we just include that name in a string as the block’s return value, which is sent to the browser.</p>
+
+<h3>Test it Out</h3>
+
+<p>Let’s try it out. Note that <strong>every time we change the Ruby file, we’ll need to restart the server.</strong> Use <code>CTL-c</code> in the terminal to quit the server, and run <code>ruby hello_sinatra.rb</code> again to relaunch the server with the updated Ruby file. In the browser, type <code>http://localhost:4567/hello/weasel</code> to load the page. If everything’s working correctly, you’ll see &ldquo;Hello, Weasel!&rdquo; in plain text.</p>
+
+<p>Way to go! We’re dynamically generating content based on the URL! Try changing up the URL after <code>hello/</code> to see what happens.</p>
+
+<h2>Multiple Parameters</h2>
+
+<p>From here, it’s trivial to add additional parameters to your routes by adding additional symbols. Let’s update the program to output the name <em>and</em> the greeting based on the URL:</p>
+
+<p><code>ruby
+get "/:greeting/:name" do
+  @greeting_name = params[:name]
+  @greeting_text = params[:greeting]
+  "#{@greeting_text.capitalize}, #{@greeting_name.capitalize}!"
+end
+</code></p>
+
+<p>Reload the server and test it out in your browser with <code>http://localhost:4567/goodbye/squirrel</code>.</p>
+
+<h3>Aside: Reloading the Server</h3>
+
+<p>Reloading the server every time we change our Ruby file is a pain, and it can cause headaches if you’re trying to troubleshoot your code but forget to restart the server. (It happens, I promise.) Luckily, there’s a gem that makes our life easier; it’s called Shotgun.</p>
+
+<p>To get Shotgun, install it like any other gem: <code>gem install shotgun</code>. Then, instead of running your program with <code>ruby hello_sinatra.rb</code>, you can use <code>shotgun hello_sinatra.rb</code>. This will automatically reload your application each time a request is sent by the server, so you don’t have to kill the server and restart it each time. Awesome.</p>
+
+<p>Also note that Shotgun uses a different default port, so you’ll want to point your browser to <code>http://localhost:9393</code> instead.</p>
+
+<h2>Multiple Routes</h2>
+
+<p>Sinatra reads the routes in the order they’re written in your Ruby file; as soon as it finds a route that matches the request sent to the server, it executes that route. This means that routes should be listed in order from most specific to least specific. For example:</p>
+
+<p>``` ruby
+get &ldquo;/:everything&rdquo; do
+  &ldquo;I match everything typed in the URL after &lsquo;/&rsquo;!&rdquo;
+end</p>
+
+<p>get &ldquo;/partytime&rdquo; do
+  &ldquo;This is a super exciting block, but it will never execute, because the first &lsquo;get&rsquo; route matches &lsquo;/partytime&rsquo;.&rdquo;
+end
+```</p>
+
+<p>Switching these around will produce the expected result.</p>
+
+<h2>ERB</h2>
+
+<p>Now that we’re serving up some dynamic text, we’ll probably want to format it. But we also don’t want to start mixing a bunch of HTML code into our Ruby logic. Sinatra has a solution: it works with <a href="http://en.wikipedia.org/wiki/ERuby">embedded ruby</a> files.</p>
+
+<p>ERB is, in this case, simply HTML code with two additional pieces of syntax: <code>&lt;% … %&gt;</code> and <code>&lt;%= … %&gt;</code>. This allows us to embed Ruby code into an HTML page by inserting it between the tags.</p>
+
+<p>There is one simple difference between these tags:</p>
+
+<ul>
+<li>The <code>&lt;% … %&gt;</code> tags execute any Ruby inside of them, but do not output the return value to the page.</li>
+<li>The <code>&lt;%= … %&gt;</code> tags execute the Ruby code inside of them, and also perform string interpolation on the return value of the ruby code. This is printed to the page.</li>
+</ul>
+
+
+<h3>Using ERB</h3>
+
+<p>To use an ERB template, we just add it to the block and use a symbol to reference the ERB file:</p>
+
+<p><code>ruby
+get "/:greeting/:name" do
+  @greeting_name = params[:name]
+  @greeting_text = params[:greeting]
+  erb :greeting
+end
+</code></p>
+
+<p>The line <code>erb :greeting</code> tells Sinatra to look in the <code>views/</code> folder — the default for all template and layout files — for a file named <code>greeting.erb</code>. After processing the embedded Ruby, the server sends the output of that file to the browser.</p>
+
+<p>Let’s create a our ERB file for this route: <code>views/greeting.erb</code>.</p>
+
+<p>``` erb
+<html>
+  <head></p>
+
+<pre><code>&lt;title&gt;Greeting Page&lt;/title&gt;
+</code></pre>
+
+<p>  </head>
+  <body></p>
+
+<pre><code>&lt;p&gt;
+  Hello, world!
+&lt;/p&gt;
+</code></pre>
+
+<p>  </body>
+</html>
+```</p>
+
+<p>Save everything and load <code>http://localhost:9393/howdy/partner</code> in your browser. You should see &ldquo;Hello, world!&rdquo; printed out.</p>
+
+<h3>Instance Variables in ERB</h3>
+
+<p>But wait! ERB templates aren’t any fun if we print the same static page for every route. Fortunately, we can access our instance variables from within the ERB file:</p>
+
+<p>``` erb
+<html>
+  <head></p>
+
+<pre><code>&lt;title&gt;Greeting Page&lt;/title&gt;
+</code></pre>
+
+<p>  </head>
+  <body></p>
+
+<pre><code>&lt;p&gt;
+  &lt;%= @greeting_text.capitalize %&gt;, &lt;%= @greeting_name.capitalize %&gt;!
+&lt;/p&gt;
+</code></pre>
+
+<p>  </body>
+</html>
+```</p>
+
+<p>When we reload the page now, we should see &ldquo;Howdy, Partner!&rdquo;, as expected.</p>
+
+<p>Try updating the <code>&lt;title&gt;</code> element to include the instance variables as well, instead of a generic greeting.</p>
+
+<h3>File Conventions and Directory Structure</h3>
+
+<p>In addition to using the <code>views/</code> directory for templates, Sinatra will also look in the <code>public/</code> directory (in the project root) for any <em>static resources</em> referenced in your views. That includes any images, stylesheets, javascripts, etc.</p>
+
+<p>For example, this tag in an ERB file will load the specified image from <code>public/</code>:</p>
+
+<p>``` html</p>
+
+<!-- note the leading slash -->
+
+
+<p><img src="http://blog.roberteshleman.com/grumpy_cat.png">
+```</p>
+
+<h2>Taking it Further</h2>
+
+<p>Sinatra has an additional templating feature called &ldquo;layouts,&rdquo; which allows us to separate out some of the boilerplate HTML from our template files, to avoid repetition.</p>
+
+<p>And we’ve only just scratched the surface here, but Sinatra also supports responding to other HTTP requests such as <code>POST</code> which allows the user to send information to the server via a web form.</p>
+
+<p>I may explore these features (and/or others) in a later post.</p>
+
+<h2>Additional Resources</h2>
+
+<ul>
+<li>Sinatra’s Fantastic <a href="http://www.sinatrarb.com/intro.html">Getting Started Guide</a></li>
+<li><a href="http://www.sinatrarb.com/documentation.html">Sinatra Documentation</a></li>
+<li><a href="https://github.com/rtomayko/shotgun">Shotgun on GitHub</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>

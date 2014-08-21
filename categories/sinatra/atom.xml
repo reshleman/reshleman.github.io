@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Sinatra | Robert Eshleman]]></title>
+  <link href="http://blog.roberteshleman.com/categories/sinatra/atom.xml" rel="self"/>
+  <link href="http://blog.roberteshleman.com/"/>
+  <updated>2014-08-21T17:00:06-04:00</updated>
+  <id>http://blog.roberteshleman.com/</id>
+  <author>
+    <name><![CDATA[Robert Eshleman]]></name>
+    <email><![CDATA[hello@roberteshleman.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Creating a Basic Web App With Ruby and Sinatra]]></title>
+    <link href="http://blog.roberteshleman.com/2014/06/26/creating-a-basic-web-app-with-ruby-and-sinatra/"/>
+    <updated>2014-06-26T12:45:25-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/06/26/creating-a-basic-web-app-with-ruby-and-sinatra</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>This week at Metis, we’re using Ruby and <a href="http://www.sinatrarb.com">Sinatra</a> to get started with some basic dynamic web programming as a stepping stone to Rails. At its core, Sinatra is a Ruby gem that allows you to specify how an app will respond to different <a href="http://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods">http requests</a> (<code>GET</code>, <code>POST</code>, etc.) and routes (the part of the URL after the domain, like <code>/</code> or <code>/blog</code> or <code>/blog/post/123</code>).</p>
+
+<p>In this post, we’ll walk through creating a basic &ldquo;hello world&rdquo;-style app that offers a greeting to the user, customized based on the url.</p>
+
+<!-- MORE -->
+
+
+<h2>Setting up Sinatra</h2>
+
+<p>Since Sinatra is a gem, we’ll start by installing it with <code>gem install sinatra</code> in the terminal. We’ll also create a separate directory for this project (<code>mkdir hello_sinatra</code>).</p>
+
+<p>In a new Ruby file (I’m using <code>hello_sinatra.rb</code>), add the line <code>require "sinatra"</code> so we can begin using the gem. We’re ready to go!</p>
+
+<h2>Hello, World!</h2>
+
+<p>To start, we just want the app to print out &ldquo;Hello, world!&rdquo; when we navigate to the domain’s base directory in the browser. That’s the &ldquo;root route&rdquo; (say that 10 times fast), or the domain name without any path at the end (like <code>http://your_domain.com/</code>).</p>
+
+<p>In Sinatra, we do this by calling <a href="http://www.sinatrarb.com/intro.html#Routes">a method</a> that corresponds to the HTTP request type we want to recognize (in this case, <code>get</code>), and we pass it the route as an argument (in this case, <code>"/"</code>).</p>
+
+<p>This method also takes a block, and the return value of the block is sent as the response to the web browser. Usually this will be a string containing HTML code, but we’ll start with simple text for now.</p>
+
+<p>Here’s what it looks like:</p>
+
+<p>``` ruby
+require &ldquo;sinatra&rdquo;</p>
+
+<p>get &ldquo;/&rdquo; do
+  &ldquo;Hello, world!&rdquo;
+end
+```</p>
+
+<h3>Test It Out</h3>
+
+<p>We can test it out in our browser by running <code>ruby hello_sinatra.rb</code>. This will launch a local server using port 4567 so we can load the app in a browser. Navigate to <code>localhost:4567</code> in your browser to check it out. If everything’s working, you’ll see &ldquo;Hello, World!&rdquo; in plain text.</p>
+
+<p>Congratulations! You’ve built a simple web app!</p>
+
+<h2>Adding URL Parameters</h2>
+
+<p>This is a nice proof-of-concept, but it doesn’t really <em>do</em> anything yet. Let’s change it up by printing different text based on the URL route that the user types in.</p>
+
+<p>Sinatra allows us to specify parameters that take a value typed within the URL by the user. Parameters are specified with a <code>:symbol</code> in the route. So we could define a new route to dynamically change the greeting based on the URL:</p>
+
+<p><code>ruby
+get "/hello/:name" do
+  @greeting_name = params[:name]
+  "Hello, #{@greeting_name.capitalize}!"
+end
+</code></p>
+
+<p>We’ve added a couple of things here. Notice the symbol <code>:name</code> in the route — this is like a variable. Whatever is typed in the URL after <code>/hello/</code> will automatically be added by Sinatra to a hash called <code>params</code>. On the second line, we’re assigning that string from the <code>params</code> hash to an instance variable called <code>@greeting_name</code>. Finally, we just include that name in a string as the block’s return value, which is sent to the browser.</p>
+
+<h3>Test it Out</h3>
+
+<p>Let’s try it out. Note that <strong>every time we change the Ruby file, we’ll need to restart the server.</strong> Use <code>CTL-c</code> in the terminal to quit the server, and run <code>ruby hello_sinatra.rb</code> again to relaunch the server with the updated Ruby file. In the browser, type <code>http://localhost:4567/hello/weasel</code> to load the page. If everything’s working correctly, you’ll see &ldquo;Hello, Weasel!&rdquo; in plain text.</p>
+
+<p>Way to go! We’re dynamically generating content based on the URL! Try changing up the URL after <code>hello/</code> to see what happens.</p>
+
+<h2>Multiple Parameters</h2>
+
+<p>From here, it’s trivial to add additional parameters to your routes by adding additional symbols. Let’s update the program to output the name <em>and</em> the greeting based on the URL:</p>
+
+<p><code>ruby
+get "/:greeting/:name" do
+  @greeting_name = params[:name]
+  @greeting_text = params[:greeting]
+  "#{@greeting_text.capitalize}, #{@greeting_name.capitalize}!"
+end
+</code></p>
+
+<p>Reload the server and test it out in your browser with <code>http://localhost:4567/goodbye/squirrel</code>.</p>
+
+<h3>Aside: Reloading the Server</h3>
+
+<p>Reloading the server every time we change our Ruby file is a pain, and it can cause headaches if you’re trying to troubleshoot your code but forget to restart the server. (It happens, I promise.) Luckily, there’s a gem that makes our life easier; it’s called Shotgun.</p>
+
+<p>To get Shotgun, install it like any other gem: <code>gem install shotgun</code>. Then, instead of running your program with <code>ruby hello_sinatra.rb</code>, you can use <code>shotgun hello_sinatra.rb</code>. This will automatically reload your application each time a request is sent by the server, so you don’t have to kill the server and restart it each time. Awesome.</p>
+
+<p>Also note that Shotgun uses a different default port, so you’ll want to point your browser to <code>http://localhost:9393</code> instead.</p>
+
+<h2>Multiple Routes</h2>
+
+<p>Sinatra reads the routes in the order they’re written in your Ruby file; as soon as it finds a route that matches the request sent to the server, it executes that route. This means that routes should be listed in order from most specific to least specific. For example:</p>
+
+<p>``` ruby
+get &ldquo;/:everything&rdquo; do
+  &ldquo;I match everything typed in the URL after &lsquo;/&rsquo;!&rdquo;
+end</p>
+
+<p>get &ldquo;/partytime&rdquo; do
+  &ldquo;This is a super exciting block, but it will never execute, because the first &lsquo;get&rsquo; route matches &lsquo;/partytime&rsquo;.&rdquo;
+end
+```</p>
+
+<p>Switching these around will produce the expected result.</p>
+
+<h2>ERB</h2>
+
+<p>Now that we’re serving up some dynamic text, we’ll probably want to format it. But we also don’t want to start mixing a bunch of HTML code into our Ruby logic. Sinatra has a solution: it works with <a href="http://en.wikipedia.org/wiki/ERuby">embedded ruby</a> files.</p>
+
+<p>ERB is, in this case, simply HTML code with two additional pieces of syntax: <code>&lt;% … %&gt;</code> and <code>&lt;%= … %&gt;</code>. This allows us to embed Ruby code into an HTML page by inserting it between the tags.</p>
+
+<p>There is one simple difference between these tags:</p>
+
+<ul>
+<li>The <code>&lt;% … %&gt;</code> tags execute any Ruby inside of them, but do not output the return value to the page.</li>
+<li>The <code>&lt;%= … %&gt;</code> tags execute the Ruby code inside of them, and also perform string interpolation on the return value of the ruby code. This is printed to the page.</li>
+</ul>
+
+
+<h3>Using ERB</h3>
+
+<p>To use an ERB template, we just add it to the block and use a symbol to reference the ERB file:</p>
+
+<p><code>ruby
+get "/:greeting/:name" do
+  @greeting_name = params[:name]
+  @greeting_text = params[:greeting]
+  erb :greeting
+end
+</code></p>
+
+<p>The line <code>erb :greeting</code> tells Sinatra to look in the <code>views/</code> folder — the default for all template and layout files — for a file named <code>greeting.erb</code>. After processing the embedded Ruby, the server sends the output of that file to the browser.</p>
+
+<p>Let’s create a our ERB file for this route: <code>views/greeting.erb</code>.</p>
+
+<p>``` erb
+<html>
+  <head></p>
+
+<pre><code>&lt;title&gt;Greeting Page&lt;/title&gt;
+</code></pre>
+
+<p>  </head>
+  <body></p>
+
+<pre><code>&lt;p&gt;
+  Hello, world!
+&lt;/p&gt;
+</code></pre>
+
+<p>  </body>
+</html>
+```</p>
+
+<p>Save everything and load <code>http://localhost:9393/howdy/partner</code> in your browser. You should see &ldquo;Hello, world!&rdquo; printed out.</p>
+
+<h3>Instance Variables in ERB</h3>
+
+<p>But wait! ERB templates aren’t any fun if we print the same static page for every route. Fortunately, we can access our instance variables from within the ERB file:</p>
+
+<p>``` erb
+<html>
+  <head></p>
+
+<pre><code>&lt;title&gt;Greeting Page&lt;/title&gt;
+</code></pre>
+
+<p>  </head>
+  <body></p>
+
+<pre><code>&lt;p&gt;
+  &lt;%= @greeting_text.capitalize %&gt;, &lt;%= @greeting_name.capitalize %&gt;!
+&lt;/p&gt;
+</code></pre>
+
+<p>  </body>
+</html>
+```</p>
+
+<p>When we reload the page now, we should see &ldquo;Howdy, Partner!&rdquo;, as expected.</p>
+
+<p>Try updating the <code>&lt;title&gt;</code> element to include the instance variables as well, instead of a generic greeting.</p>
+
+<h3>File Conventions and Directory Structure</h3>
+
+<p>In addition to using the <code>views/</code> directory for templates, Sinatra will also look in the <code>public/</code> directory (in the project root) for any <em>static resources</em> referenced in your views. That includes any images, stylesheets, javascripts, etc.</p>
+
+<p>For example, this tag in an ERB file will load the specified image from <code>public/</code>:</p>
+
+<p>``` html</p>
+
+<!-- note the leading slash -->
+
+
+<p><img src="http://blog.roberteshleman.com/grumpy_cat.png">
+```</p>
+
+<h2>Taking it Further</h2>
+
+<p>Sinatra has an additional templating feature called &ldquo;layouts,&rdquo; which allows us to separate out some of the boilerplate HTML from our template files, to avoid repetition.</p>
+
+<p>And we’ve only just scratched the surface here, but Sinatra also supports responding to other HTTP requests such as <code>POST</code> which allows the user to send information to the server via a web form.</p>
+
+<p>I may explore these features (and/or others) in a later post.</p>
+
+<h2>Additional Resources</h2>
+
+<ul>
+<li>Sinatra’s Fantastic <a href="http://www.sinatrarb.com/intro.html">Getting Started Guide</a></li>
+<li><a href="http://www.sinatrarb.com/documentation.html">Sinatra Documentation</a></li>
+<li><a href="https://github.com/rtomayko/shotgun">Shotgun on GitHub</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>

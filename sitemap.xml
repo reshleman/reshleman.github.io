@@ -3,64 +3,64 @@
   
   
   <url>
-    <loc>http://reshleman.github.io/blog/2014/08/14/using-rails-namespaces-for-admin-actions/</loc>
+    <loc>http://blog.roberteshleman.com/2014/08/14/using-rails-namespaces-for-admin-actions/</loc>
     <lastmod>2014-08-14T17:17:56-04:00</lastmod>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>http://reshleman.github.io/blog/2014/08/08/learning-a-team-based-git-workflow/</loc>
+    <loc>http://blog.roberteshleman.com/2014/08/08/learning-a-team-based-git-workflow/</loc>
     <lastmod>2014-08-08T14:37:09-04:00</lastmod>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>http://reshleman.github.io/blog/2014/07/31/ajax-its-better-with-rails/</loc>
+    <loc>http://blog.roberteshleman.com/2014/07/31/ajax-its-better-with-rails/</loc>
     <lastmod>2014-07-31T15:59:11-04:00</lastmod>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>http://reshleman.github.io/blog/2014/07/18/learning-to-work-efficiently-with-vim/</loc>
+    <loc>http://blog.roberteshleman.com/2014/07/18/learning-to-work-efficiently-with-vim/</loc>
     <lastmod>2014-07-18T14:31:09-04:00</lastmod>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>http://reshleman.github.io/blog/2014/07/09/learning-rails-via-error-driven-development/</loc>
+    <loc>http://blog.roberteshleman.com/2014/07/09/learning-rails-via-error-driven-development/</loc>
     <lastmod>2014-07-09T13:10:52-04:00</lastmod>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>http://reshleman.github.io/blog/2014/07/07/models-views-and-controllers-oh-my-anatomy-of-a-rails-app/</loc>
+    <loc>http://blog.roberteshleman.com/2014/07/07/models-views-and-controllers-oh-my-anatomy-of-a-rails-app/</loc>
     <lastmod>2014-07-07T14:14:17-04:00</lastmod>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>http://reshleman.github.io/blog/2014/06/26/creating-a-basic-web-app-with-ruby-and-sinatra/</loc>
+    <loc>http://blog.roberteshleman.com/2014/06/26/creating-a-basic-web-app-with-ruby-and-sinatra/</loc>
     <lastmod>2014-06-26T12:45:25-04:00</lastmod>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>http://reshleman.github.io/blog/2014/06/23/the-value-of-learning-object-oriented-design-in-ruby-dot-dot-dot-starting-from-day-1/</loc>
+    <loc>http://blog.roberteshleman.com/2014/06/23/the-value-of-learning-object-oriented-design-in-ruby-dot-dot-dot-starting-from-day-1/</loc>
     <lastmod>2014-06-23T12:56:03-04:00</lastmod>
     <priority>0.8</priority>
   </url>
   
   
   <url>
-    <loc>http://reshleman.github.io/blog/archives/</loc>
-    <lastmod>2014-08-18T22:25:38-04:00</lastmod>
+    <loc>http://blog.roberteshleman.com/archives/</loc>
+    <lastmod>2014-08-21T17:00:06-04:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
-    <loc>http://reshleman.github.io/</loc>
-    <lastmod>2014-08-18T22:25:38-04:00</lastmod>
+    <loc>http://blog.roberteshleman.com/</loc>
+    <lastmod>2014-08-21T17:00:06-04:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>

@@ -1,0 +1,386 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>AJAX: It's Better With Rails - Robert Eshleman</title>
+  <meta name="author" content="Robert Eshleman">
+
+  
+  <meta name="description" content="This summer, I&rsquo;m learning Ruby on Rails at Metis, a 12-week class taught by some great folks from thoughtbot. This post is part of a series &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://blog.roberteshleman.com/2014/07/31/ajax-its-better-with-rails">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Robert Eshleman" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href='//fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<link href='//fonts.googleapis.com/css?family=Fjalla+One' rel='stylesheet' type='text/css'>
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-52127893-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'stats.g.doubleclick.net/dc.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   class="collapse-sidebar sidebar-footer" >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Robert Eshleman</a></h1>
+  
+    <h2>web developer in New York</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+<ul class="subscription">
+  <li><a href="mailto:hello@roberteshleman.com" rel="email" title="Email Me">Email</a></li>
+</ul>
+  
+  
+<ul class="subscription">
+  <li><a href="https://linkedin.com/in/roberteshleman" rel="website-linkedin" title="LinkedIn Profile">LinkedIn</a></li>
+</ul>
+  
+  
+<ul class="subscription">
+  <li><a href="https://github.com/reshleman" rel="website-github" title="GitHub Profile">GitHub</a></li>
+</ul>
+  
+  
+<ul class="subscription">
+  <li><a href="https://twitter.com/RobertEshleman" rel="website-twitter" title="Twitter Feed">Twitter</a></li>
+</ul>
+  
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">AJAX: It's Better With Rails</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-31T15:59:11-04:00" pubdate data-updated="true">Jul 31<sup>st</sup>, 2014</time>
+        
+           | <a href="#disqus_thread"
+             data-disqus-identifier="http://blog.roberteshleman.com">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>Most people love the responsive experience of using <a href="http://en.wikipedia.org/wiki/Ajax_%28programming%29">AJAX</a>-y web pages. <em>Creating</em> that functionality, on the other hand, is not always so enjoyable: asynchronous requests can be difficult to code and debug.</p>
+
+<p>It may not be a surprise that Rails helps us abstract some of the more challenging AJAX code. In this post, we&rsquo;ll take a look at a basic AJAX request constructed with vanilla jQuery; then, we&rsquo;ll check out the tools Rails gives us to create and respond to asynchronous requests.</p>
+
+<!--More-->
+
+
+<h2>The Hard Way</h2>
+
+<p>The <a href="http://jquery.com/">jQuery library</a> allows us to construct AJAX requests ourselves. If we were to do this for a form submission to create a new task in a todo-list app, it might look something like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>  <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#form_id&quot;</span><span class="p">).</span><span class="nx">submit</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span>
+</span><span class='line'>      <span class="s2">&quot;/tasks&quot;</span><span class="p">,</span>
+</span><span class='line'>      <span class="p">{</span> <span class="nx">task</span><span class="o">:</span>
+</span><span class='line'>        <span class="p">{</span> <span class="nx">title</span><span class="o">:</span>
+</span><span class='line'>          <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#task_title&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>      <span class="p">},</span>
+</span><span class='line'>      <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#tasks&quot;</span><span class="p">).</span><span class="nx">prepend</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>    <span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">});</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The outer function call (<code>$(function() { ... });</code>) tells jQuery that the code inside is to be executed once the <a href="http://api.jquery.com/ready/">document is ready</a> (i.e., after the entire DOM loads).</p>
+
+<p>Then, we tell the browser to <a href="http://api.jquery.com/submit/">bind a function to the submit event</a> for our form, by calling <code>$("#form_id").submit(function() { ... });</code>. This tells the browser that the enclosed JavaScript function should be executed when the form is submitted.</p>
+
+<p>Within that function we have two statements: the first one (<code>$.post( ... );</code>) <a href="http://api.jquery.com/jQuery.post/">creates a POST request via AJAX</a>; the second (<code>return false;</code>) tells the browser not to execute the default action for the submitted form, which, in this case, would cause the page to reload.</p>
+
+<p>Our actual AJAX request has three parameters: the route &ldquo;/tasks&rdquo;, which we send the request to, the data we&rsquo;re sending (an object), and a callback function that runs if the request is successful. Our callback function simply <a href="http://api.jquery.com/prepend/">prepends</a> the <code>data</code> (in this case, HTML) returned by the server to the DOM element with the id of <code>tasks</code>.</p>
+
+<p>Phew.</p>
+
+<h2>The Rails Way</h2>
+
+<p>Fortunately, Rails can take care of a lot of this code for us. If we&rsquo;re using <code>form_for</code> or <code>link_to</code> in our view, we can specify the argument <code>remote: true</code> to cause Rails to <a href="http://edgeguides.rubyonrails.org/working_with_javascript_in_rails.html#built-in-helpers">automatically submit the form</a> (or load the link) via an AJAX request. We don&rsquo;t have to write any of the JavaScript to send the request!</p>
+
+<p>We will have to write the JavaScript we want the browser to execute when we receive the response, but Rails sends that JavaScript as the response to the AJAX request. We&rsquo;ll need to take a look at our Controller for that.</p>
+
+<h2>XHR in Controllers</h2>
+
+<p>One neat thing about Rails is that we can use the same controller and action for a standard HTTP request and for an asynchronous request, simply by telling Rails what kind of requests to respond to.</p>
+
+<p>In our controller, we use a <a href="http://api.rubyonrails.org/classes/ActionController/MimeResponds.html#method-i-respond_to"><code>respond_to</code></a> block to list the different formats:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='rb'><span class='line'><span class="k">def</span> <span class="nf">create</span>
+</span><span class='line'>  <span class="c1"># Do some stuff to create a task</span>
+</span><span class='line'>  <span class="n">respond_to</span> <span class="k">do</span> <span class="o">|</span><span class="nb">format</span><span class="o">|</span>
+</span><span class='line'>    <span class="nb">format</span><span class="o">.</span><span class="n">html</span> <span class="p">{</span> <span class="n">redirect_to</span> <span class="n">tasks_path</span> <span class="p">}</span>
+</span><span class='line'>    <span class="nb">format</span><span class="o">.</span><span class="n">js</span>   <span class="p">{</span> <span class="p">}</span>
+</span><span class='line'>   <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This code tells Rails to respond to either a request for an HTML response or a request for a JavaScript response. If the browser is asking for an HTML response, we just redirect to the given path; if the browser is expecting a JavaScript response (it does when we use <code>remote: true</code> on our form), then we render the default view for this controller, action, and response format. In this case, that would be <code>app/views/tasks/create.js.erb</code></p>
+
+<h2>.js.erb Views</h2>
+
+<p>In that view, we can include any JavaScript we want, <strong>and the browser will automatically execute that JavaScript</strong> when it receives the response. This basically becomes our callback function, and, because it&rsquo;s a view, we can render partials in it.</p>
+
+<p>Our <code>.js.erb</code> file for this example might look like:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#tasks&quot;</span><span class="p">).</span><span class="nx">prepend</span><span class="p">(</span><span class="s2">&quot;&lt;%=j render @task %&gt;&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#task_title&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This JavaScript prepends the rendered task to the DOM element with the id <code>tasks</code>, and clears our form field. Note that we use special ERB tags (<code>&lt;%=j ... %&gt;</code>) to escape our rendered data so that it can be safely included in a JavaScript string.</p>
+
+<h2>Resources</h2>
+
+<p>That&rsquo;s a quick overview of some of the most basic things you can do with Rails and JavaScript. There are plenty of resources on the web with more information about <a href="http://it-ebooks.info/book/274/">JavaScript</a>, <a href="http://api.jquery.com/">jQuery</a>, <a href="http://coffeescript.org/">CoffeeScript</a> (a language that compiles to JavaScript), and <a href="http://edgeguides.rubyonrails.org/working_with_javascript_in_rails.html">how Rails works with these</a>. Here are a few:</p>
+
+<ul>
+<li><a href="http://edgeguides.rubyonrails.org/working_with_javascript_in_rails.html">Rails Guide on AJAX</a></li>
+<li><a href="http://it-ebooks.info/book/274/">JavaScript: The Good Parts (ebook)</a></li>
+<li><a href="http://api.jquery.com/">jQuery API</a></li>
+<li><a href="http://coffeescript.org/">CoffeeScript</a></li>
+</ul>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Authored by <span class="fn">Robert Eshleman</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-31T15:59:11-04:00" pubdate data-updated="true">Jul 31<sup>st</sup>, 2014</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/categories/ajax/'>ajax</a>, <a class='category' href='/categories/javascript/'>javascript</a>, <a class='category' href='/categories/jquery/'>jquery</a>, <a class='category' href='/categories/metis/'>metis</a>, <a class='category' href='/categories/rails/'>rails</a>, <a class='category' href='/categories/tech/'>tech</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://blog.roberteshleman.com/2014/07/31/ajax-its-better-with-rails/" data-via="RobertEshleman" data-counturl="http://blog.roberteshleman.com/2014/07/31/ajax-its-better-with-rails/" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/2014/07/18/learning-to-work-efficiently-with-vim/" title="Previous Post: Learning to Work Efficiently with Vim">&laquo; Learning to Work Efficiently with Vim</a>
+      
+      
+        <a class="basic-alignment right" href="/2014/08/08/learning-a-team-based-git-workflow/" title="Next Post: Learning a Team-Based Git Workflow">Learning a Team-Based Git Workflow &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+
+</div>
+
+<aside class="sidebar">
+  
+    
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Robert Eshleman -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a> | Themed with <a href="https://github.com/lucaslew/whitespace">Whitespace</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'reshleman';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://blog.roberteshleman.com/2014/07/31/ajax-its-better-with-rails/';
+        var disqus_url = 'http://blog.roberteshleman.com/2014/07/31/ajax-its-better-with-rails/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
