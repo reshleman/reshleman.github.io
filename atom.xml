@@ -4,7 +4,7 @@
   <title><![CDATA[Robert Eshleman]]></title>
   <link href="http://blog.roberteshleman.com/atom.xml" rel="self"/>
   <link href="http://blog.roberteshleman.com/"/>
-  <updated>2014-08-21T17:00:06-04:00</updated>
+  <updated>2014-08-22T11:19:44-04:00</updated>
   <id>http://blog.roberteshleman.com/</id>
   <author>
     <name><![CDATA[Robert Eshleman]]></name>
@@ -12,6 +12,122 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Private Class Methods in Ruby]]></title>
+    <link href="http://blog.roberteshleman.com/2014/08/22/private-class-methods-in-ruby/"/>
+    <updated>2014-08-22T11:17:04-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/08/22/private-class-methods-in-ruby</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>File this one under, &ldquo;fool me once, shame on you; fool me twice, write a blog post.&rdquo;</p>
+
+<p>In Ruby we use the <a href="http://www.ruby-doc.org/core-2.1.2/Module.html#method-i-private"><code>private</code> method</a> to define instance methods that are only accessible from within a class:</p>
+
+<!-- More -->
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">HammerTime</span>
+</span><span class='line'>  <span class="c1"># Arbitrary public methods omitted</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kp">private</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nf">stop</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;Can&#39;t touch this&quot;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Calling <code>stop</code> on an instance of the class <code>HammerTime</code> from somewhere other than within the class itself will result in an error:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">HammerTime</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">stop</span>
+</span><span class='line'><span class="c1"># =&gt; NoMethodError: private method `stop&#39; called for #&lt;HammerTime:0x00&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Given this, we might expect the same syntax to work for <em>class methods</em>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">I</span>
+</span><span class='line'>  <span class="c1"># Arbitrary public methods omitted</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kp">private</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">wanna</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;...dance with somebody&quot;</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;...feel the heat with somebody&quot;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Surely we&rsquo;ll get the same <code>NoMethodError</code>, right? Wrong:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">I</span><span class="o">.</span><span class="n">wanna</span>
+</span><span class='line'><span class="c1"># =&gt; ...dance with somebody</span>
+</span><span class='line'><span class="c1"># =&gt; ...feel the heat with somebody</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Instead, we&rsquo;ll need to explicitly define this method as a <a href="http://www.ruby-doc.org/core-2.1.2/Module.html#method-i-private_class_method"><code>private_class_method</code></a>, like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">class</span> <span class="nc">Domo</span>
+</span><span class='line'>  <span class="c1"># Arbitrary public methods omitted</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">arigato</span>
+</span><span class='line'>    <span class="nb">puts</span> <span class="s2">&quot;Secret secret, I&#39;ve got a secret&quot;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>  <span class="nb">private_class_method</span> <span class="ss">:arigato</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And we&rsquo;ll get the expected error, indicating this method is only accessible from within the class:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Domo</span><span class="o">.</span><span class="n">arigato</span>
+</span><span class='line'><span class="c1"># =&gt; NoMethodError: private method `arigato&#39; called for Domo:Class</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><em>Caveat emptor.</em></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Using Rails Namespaces for Admin Actions]]></title>

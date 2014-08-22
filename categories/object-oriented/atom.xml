@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Object-oriented | Robert Eshleman]]></title>
+  <link href="http://blog.roberteshleman.com/categories/object-oriented/atom.xml" rel="self"/>
+  <link href="http://blog.roberteshleman.com/"/>
+  <updated>2014-08-22T11:19:44-04:00</updated>
+  <id>http://blog.roberteshleman.com/</id>
+  <author>
+    <name><![CDATA[Robert Eshleman]]></name>
+    <email><![CDATA[hello@roberteshleman.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Private Class Methods in Ruby]]></title>
+    <link href="http://blog.roberteshleman.com/2014/08/22/private-class-methods-in-ruby/"/>
+    <updated>2014-08-22T11:17:04-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/08/22/private-class-methods-in-ruby</id>
+    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
+
+<p>File this one under, &ldquo;fool me once, shame on you; fool me twice, write a blog post.&rdquo;</p>
+
+<p>In Ruby we use the <a href="http://www.ruby-doc.org/core-2.1.2/Module.html#method-i-private"><code>private</code> method</a> to define instance methods that are only accessible from within a class:</p>
+
+<!-- More -->
+
+
+<p>```ruby
+class HammerTime
+  # Arbitrary public methods omitted</p>
+
+<p>  private</p>
+
+<p>  def stop</p>
+
+<pre><code>puts "Can't touch this"
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Calling <code>stop</code> on an instance of the class <code>HammerTime</code> from somewhere other than within the class itself will result in an error:</p>
+
+<p>```ruby
+HammerTime.new.stop</p>
+
+<h1>=> NoMethodError: private method `stop' called for #&lt;HammerTime:0x00></h1>
+
+<p>```</p>
+
+<p>Given this, we might expect the same syntax to work for <em>class methods</em>:</p>
+
+<p>```ruby
+class I
+  # Arbitrary public methods omitted</p>
+
+<p>  private</p>
+
+<p>  def self.wanna</p>
+
+<pre><code>puts "...dance with somebody"
+puts "...feel the heat with somebody"
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Surely we&rsquo;ll get the same <code>NoMethodError</code>, right? Wrong:</p>
+
+<p>```ruby
+I.wanna</p>
+
+<h1>=> &hellip;dance with somebody</h1>
+
+<h1>=> &hellip;feel the heat with somebody</h1>
+
+<p>```</p>
+
+<p>Instead, we&rsquo;ll need to explicitly define this method as a <a href="http://www.ruby-doc.org/core-2.1.2/Module.html#method-i-private_class_method"><code>private_class_method</code></a>, like this:</p>
+
+<p>```ruby
+class Domo
+  # Arbitrary public methods omitted</p>
+
+<p>  def self.arigato</p>
+
+<pre><code>puts "Secret secret, I've got a secret"
+</code></pre>
+
+<p>  end
+  private_class_method :arigato
+end
+```</p>
+
+<p>And we&rsquo;ll get the expected error, indicating this method is only accessible from within the class:</p>
+
+<p>```ruby
+Domo.arigato</p>
+
+<h1>=> NoMethodError: private method `arigato' called for Domo:Class</h1>
+
+<p>```</p>
+
+<p><em>Caveat emptor.</em></p>
+]]></content>
+  </entry>
+  
+</feed>
