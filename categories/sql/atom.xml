@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Sql | Robert Eshleman]]></title>
+  <link href="http://blog.roberteshleman.com/categories/sql/atom.xml" rel="self"/>
+  <link href="http://blog.roberteshleman.com/"/>
+  <updated>2014-09-17T22:48:42-04:00</updated>
+  <id>http://blog.roberteshleman.com/</id>
+  <author>
+    <name><![CDATA[Robert Eshleman]]></name>
+    <email><![CDATA[hello@roberteshleman.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Using Postgres Views With Rails]]></title>
+    <link href="http://blog.roberteshleman.com/2014/09/17/using-postgres-views-with-rails/"/>
+    <updated>2014-09-17T22:17:00-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/09/17/using-postgres-views-with-rails</id>
+    <content type="html"><![CDATA[<p><em>I&rsquo;m a recent graduate of <a href="http://www.thisismetis.com">Metis</a>, a 12-week Ruby on Rails course taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;ve learned.</em></p>
+
+<p>Most relational databases support the concept of a <a href="http://en.wikipedia.org/wiki/View_%28SQL%29">view</a>, a pre-defined relation that&rsquo;s essentially a stored query. You can query a view just like any other database table, but the fields and values in a view are defined based on the query used to create the view.</p>
+
+<p>Views can be used for a number of reasons, most of them related to abstraction. For example, a view could be defined to allow easier querying of a complex join or to filter a relation to include only a subset of data.</p>
+
+<p>In this post, we&rsquo;ll take a look at using a Postgres view with Rails to encapsulate data in a repeated aggregate query.</p>
+
+<!-- More -->
+
+
+<h2>The Project and the Problem</h2>
+
+<p>As my capstone project for <a href="http://www.thisismetis.com">Metis</a>, I created <a href="http://bdwycritic.com">BdwyCritic</a> (<a href="https://github.com/reshleman/bdwycritic">source on GitHub</a>), a review aggregator for Broadway shows, similar to <a href="http://www.metacritic.com">Metacritic</a>. Every show (I called them &ldquo;events&rdquo;) has many user reviews and many media (or critic) reviews.</p>
+
+<p>When building the site, I found that I was frequently displaying the average user and media review score for events. In my original implementation, I used a class method to gather these statistics:</p>
+
+<p>```ruby</p>
+
+<h1>app/models/event.rb</h1>
+
+<p>class Event &lt; ActiveRecord::Base
+  has_many :user_reviews, dependent: :destroy
+  has_many :media_reviews, dependent: :destroy</p>
+
+<p>  def self.with_review_statistics</p>
+
+<pre><code>select("events.*").
+select("AVG(media_reviews.score) AS average_media_review").
+select("AVG(user_reviews.score) AS average_user_review").
+joins("LEFT JOIN media_reviews ON events.id = media_reviews.event_id").
+joins("LEFT JOIN user_reviews ON events.id = user_reviews.event_id").
+group("events.id")
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>There were at least two pain points I encountered with this code.</p>
+
+<ol>
+<li>That&rsquo;s a lot of ugly SQL to have in the model, and it made it difficult to read and understand the method.</li>
+<li>Every <code>Event</code> logically has the concept of an &ldquo;average user review&rdquo; or an &ldquo;average media review.&rdquo; With this implementation, those values were only available for a given <code>Event</code> if I had explicitly queried the model using this class method.</li>
+</ol>
+
+
+<p>Both of these <a href="http://en.wikipedia.org/wiki/Code_smell">code smells</a> prompted me to explore alternative implementations.</p>
+
+<h2>Choosing a Database View as the Solution</h2>
+
+<p>I considered a couple of solutions before settling on using a database view:</p>
+
+<ol>
+<li><p>Change this class method into the <strong><a href="http://guides.rubyonrails.org/active_record_querying.html#applying-a-default-scope">default scope</a></strong> for the <code>Event</code> model. That would resolve the second issue above, because every instance of <code>Event</code> would be automatically scoped with fields representing the average review values. The difficult-to-read SQL code would still remain in the model, however, and default scopes can sometimes lead to other unexpected complications with queries.</p></li>
+<li><p><strong>De-normalize the database</strong> and keep a cache of the average review scores for each event. This would potentially come with a performance increase for database reads (which, in this application, are more frequent than writes). It would also likely involve using <a href="http://guides.rubyonrails.org/active_record_callbacks.html">ActiveRecord callbacks</a> to manually maintain the cached values, something I prefer to avoid when at all possible.</p></li>
+<li><p>A <strong>database view</strong> solves both of the challenges of my previous implementation. It removes the SQL statements from the model and allows every <code>Event</code> to have methods for average user and media reviews. (I achieved the latter through <a href="http://en.wikipedia.org/wiki/Delegation_pattern">delegation</a>, as we&rsquo;ll see.)</p></li>
+</ol>
+
+
+<p>(There <em>is</em> one caveat to call out here: because ActiveRecord doesn&rsquo;t natively support views, using a view removes the flexibility that ActiveRecord provides to interface with different database backends. There could be a cost later if we want to switch over to, say, MySQL. Given what I know about this project and the production environment, that&rsquo;s a trade-off I&rsquo;m currently comfortable making.)</p>
+
+<h2>Creating the Database View</h2>
+
+<p>Like any other database change in Rails, creating the view involves a migration.</p>
+
+<p>Because the ActiveRecord <a href="http://en.wikipedia.org/wiki/Domain-specific_language">DSL</a> doesn&rsquo;t provide methods for creating views, we actually have to <a href="http://www.postgresql.org/docs/9.3/static/sql-createview.html">write the SQL ourselves</a>, but it&rsquo;s not too complicated. The <code>SELECT</code> is basically a translation of our earlier class method into raw SQL.</p>
+
+<p>```ruby</p>
+
+<h1>db/migrate/TIMESTAMP_create_review_statistics_summary_view.rb</h1>
+
+<p>class CreateReviewStatisticsSummaryView &lt; ActiveRecord::Migration
+  def up</p>
+
+<pre><code>execute &lt;&lt;-SQL
+  CREATE VIEW review_statistics_summary AS
+    SELECT
+      events.id as event_id,
+      AVG(user_reviews.score) AS average_user_review,
+      AVG(media_reviews.score) AS average_media_review
+    FROM
+      events
+      LEFT JOIN user_reviews ON events.id = user_reviews.event_id
+      LEFT JOIN media_reviews ON events.id = media_reviews.event_id
+    GROUP BY
+      events.id
+SQL
+</code></pre>
+
+<p>  end</p>
+
+<p>  def down</p>
+
+<pre><code>execute "DROP VIEW review_statistics_summary"
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Then, just run <code>rake db:migrate</code>.</p>
+
+<h2>Setting up the Models</h2>
+
+<h3>Defining a Model for the Database View</h3>
+
+<p>Despite ActiveRecord&rsquo;s lack of support for views, it does treat the view as any other relation, so we can easily hook it up to a model.</p>
+
+<p>```ruby</p>
+
+<h1>app/models/review_statistics_summary.rb</h1>
+
+<p>class ReviewStatisticsSummary &lt; ActiveRecord::Base
+  self.primary_key = &ldquo;event_id&rdquo;</p>
+
+<p>  belongs_to :event
+end
+```</p>
+
+<p>This view doesn&rsquo;t have it&rsquo;s own <code>id</code> column because <code>event_id</code> is the value that uniquely identifies records in the relation. ActiveRecord expects the primary key column to be called <code>id</code>, though, so we explicitly define the primary key column in the model.</p>
+
+<p><em>Technically</em>, because this model will only be used in relation to an <code>Event</code> object, we don&rsquo;t even need to specify the primary key. I&rsquo;m inclined to include it here anyway, since there&rsquo;s a chance we might run into unexpected ActiveRecord errors in the future without it (if we try to call <code>ReviewStatisticsSummmary.find</code>, for example).</p>
+
+<h3>Updating the Event Model</h3>
+
+<p>The second step is to relate the <code>Event</code> model to the <code>ReviewStatisticsSummary</code> model. This one is easy:</p>
+
+<p>```ruby</p>
+
+<h1>app/models/event.rb</h1>
+
+<p>has_one :review_statistics_summary
+```</p>
+
+<h3>Delegating the Average Methods</h3>
+
+<p>Finally, we&rsquo;d like to avoid chained method calls (like <code>event.review_statistics_summary.average_user_review</code>), which are difficult to read and violate the <a href="http://c2.com/cgi/wiki?LawOfDemeter">Law of Demeter</a>.</p>
+
+<p>The simple solution here is to <a href="http://guides.rubyonrails.org/active_support_core_extensions.html#method-delegation">delegate</a> the <code>average_user_review</code> and <code>average_media_review</code> methods to the <code>ReviewStatisticsSummary</code> class:</p>
+
+<p>```ruby</p>
+
+<h1>app/models/event.rb</h1>
+
+<p>delegate :average_user_review, :average_media_review, to: :review_statistics_summary
+```</p>
+
+<p>Now we can call <code>event.average_user_review</code> or <code>event.average_media_review</code> as expected, and those method calls are <em>delegated</em> to that event&rsquo;s instance of <code>ReviewStatisticsSummary</code>.</p>
+
+<p>This syntax is a <a href="http://guides.rubyonrails.org/active_support_core_extensions.html#method-delegation">Rails shorthand</a> equivalent to defining these two methods on <code>Event</code>:</p>
+
+<p>```ruby</p>
+
+<h1>app/models/event.rb</h1>
+
+<p>def average_user_review
+  review_statistics_summary.average_user_review
+end</p>
+
+<p>def average_media_review
+  review_statistics_summary.average_media_review
+end
+```</p>
+
+<p>We can also delete the entire <code>self.with_review_statistics</code> class method from earlier. Hooray!</p>
+
+<h2>Postgres Views and the Rails Database Schema</h2>
+
+<p>One final caveat to note here: because of the way we&rsquo;ve defined the view with raw SQL, ActiveRecord has no way of adding that information to Rails&rsquo;s <code>db/schema.rb</code> file.</p>
+
+<p>However, if you&rsquo;re deploying an app, you often don&rsquo;t want to run all of the migrations to set up the database. Instead, <a href="http://guides.rubyonrails.org/migrations.html#schema-dumping-and-you">the preferred way to deploy the database</a> is to just load the schema itself. Since the schema doesn&rsquo;t contain a definition for the view we&rsquo;ve just created, we&rsquo;ll run into problems.</p>
+
+<p>This is of particular concern when using RSpec with Rails 4.1+, because RSpec loads the test environment database from the schema file by default. Since we&rsquo;ve manually created the view and it&rsquo;s not in <code>db/schema.rb</code>, Postgres will complain that the view does not exist when running the tests.</p>
+
+<p>The workaround is to tell Rails to use raw SQL for its schema in a file called <code>db/structure.sql</code>. This file replaces <code>db/schema.rb</code> and dumps the structure directly from the database instead of using the ActiveRecord <a href="http://en.wikipedia.org/wiki/Domain-specific_language">DSL</a>. The <a href="http://guides.rubyonrails.org/migrations.html#types-of-schema-dumps">Rails Guide on Migrations</a> provides detailed instructions for making that change. It&rsquo;s pretty painless.</p>
+
+<h2>Resources</h2>
+
+<ul>
+<li><a href="http://en.wikipedia.org/wiki/View_%28SQL%29">Overview of Database Views</a></li>
+<li><a href="http://www.postgresql.org/docs/9.3/static/sql-createview.html">Postgres Documentation for Views</a></li>
+<li><a href="http://guides.rubyonrails.org/migrations.html#schema-dumping-and-you">Rails Schema Formats</a></li>
+<li><a href="http://en.wikipedia.org/wiki/Delegation_pattern">Delegation Pattern</a></li>
+<li><a href="http://guides.rubyonrails.org/active_support_core_extensions.html#method-delegation">Method Delegation in Rails</a></li>
+<li><a href="http://c2.com/cgi/wiki?LawOfDemeter">Law of Demeter</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>
