@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Ruby | Robert Eshleman]]></title>
   <link href="http://blog.roberteshleman.com/categories/ruby/atom.xml" rel="self"/>
   <link href="http://blog.roberteshleman.com/"/>
-  <updated>2014-09-17T22:48:42-04:00</updated>
+  <updated>2014-10-17T16:02:06-04:00</updated>
   <id>http://blog.roberteshleman.com/</id>
   <author>
     <name><![CDATA[Robert Eshleman]]></name>
@@ -12,6 +12,112 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Readable RSpec Tests With Helper Methods]]></title>
+    <link href="http://blog.roberteshleman.com/2014/10/17/readable-rspec-tests-with-helper-methods/"/>
+    <updated>2014-10-17T15:55:34-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/10/17/readable-rspec-tests-with-helper-methods</id>
+    <content type="html"><![CDATA[<p><em>I&rsquo;m a recent graduate of <a href="http://www.thisismetis.com">Metis</a>, a 12-week Ruby on Rails course taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;ve learned.</em></p>
+
+<p>I&rsquo;ve been spending a lot of time recently becoming familiar with <a href="http://rspec.info">Rspec</a>, <a href="http://jnicklas.github.io/capybara/">Capybara</a>, and <a href="http://en.wikipedia.org/wiki/Test-driven_development">TDD</a>. Because tests frequently have similar or repeated steps, this has also been a great opportunity to practice <a href="http://c2.com/cgi/wiki?DontRepeatYourself">DRY</a>-ing up my code.</p>
+
+<p>One particularly effective technique I&rsquo;ve been using often in my tests is extracting helper methods with descriptive names to make my code easier to read.</p>
+
+<!--More-->
+
+
+<h2>Setup and Exercise</h2>
+
+<p>In the setup and exercise <a href="http://robots.thoughtbot.com/four-phase-test">phase</a>s, code across tests may be very similar and ripe for extraction into a method. For example, here&rsquo;s a helper method in one of my feature specs for a user signing in:</p>
+
+<p><code>ruby
+def visit_sign_in_page
+  visit root_path
+  click_link "Sign in"
+end
+</code></p>
+
+<p>And another simple one that takes some parameters:</p>
+
+<p><code>ruby
+def user_signs_in_as(email, password)
+  fill_in "Email", with: email
+  fill_in "Password", with: password
+  click_button "Sign in"
+end
+</code></p>
+
+<h2>Verify</h2>
+
+<p>I&rsquo;ve found that the verification <a href="http://robots.thoughtbot.com/four-phase-test">phase</a> of my tests tend to see the most readability benefit from extracting methods.</p>
+
+<p>For example, this was some code that I used in a test verification recently:</p>
+
+<p><code>ruby
+expect(page).to have_css(".event", text: event.name)
+</code></p>
+
+<p>This isn&rsquo;t too bad, but it becomes clearer when extracted into a helper method:</p>
+
+<p><code>ruby
+def have_event_summary(event)
+  have_css(".event", text: event.name)
+end
+</code></p>
+
+<p>The intent of this verification is obvious when I now write <code>expect(page).to have_event_summary(event)</code> or <code>expect(page).not_to have_event_summary(event)</code>.</p>
+
+<p>For more complex verifications, the expectation can also be included in the helper method, like so:</p>
+
+<p>```ruby
+def expect_page_to_have_user_review_summary_for(event)
+  within(&ldquo;.review-score&rdquo;, text: &ldquo;Users&rdquo;) do</p>
+
+<pre><code>expect(page).to have_text(event.average_user_review_score)
+expect(page).to have_text("#{event.num_user_reviews} Reviews")
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>The verification phase for most of my tests using this method simply reads <code>expct_page_to_have_user_review_summary_for(event)</code>. This is much nicer than multiple <code>have_css</code> or <code>have_text</code> expectations.</p>
+
+<p>As an additional bonus, RSpec will even provide clear failure messages if these assertions fail:</p>
+
+<p><code>
+Failure/Error: expect_page_to_have_user_review_summary_for(event)
+expected to find text "9.0" in "No Review Here"
+</code></p>
+
+<h2>Reuse Across Files</h2>
+
+<p>Finally, RSpec allows these methods to be easily reused across spec files, if we so desire.</p>
+
+<p>All we have to do is wrap them up in a module like <code>EventSummaryHelpers</code> in <code>spec/support/</code>. Then, in <code>spec/rails_helper.rb</code>, simply tell RSpec to load that module:</p>
+
+<p><code>ruby
+RSpec.configure do |config|
+  config.include EventSummaryHelpers, type: :feature
+end
+</code></p>
+
+<p>In this case, to save overhead, RSpec will only load these helpers when running feature specs.</p>
+
+<h2>Resources</h2>
+
+<ul>
+<li><a href="http://testdrivenwebsites.com/2011/08/17/different-ways-of-code-reuse-in-rspec/">Code Reuse in RSpec</a></li>
+<li><a href="http://robots.thoughtbot.com/four-phase-test">Four-Phase Tests</a></li>
+<li><a href="http://betterspecs.org">Writing Better Tests</a></li>
+<li><a href="http://rspec.info">RSpec</a></li>
+<li><a href="http://jnicklas.github.io/capybara/">Capybara</a></li>
+<li><a href="http://en.wikipedia.org/wiki/Test-driven_development">TDD</a></li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Using Postgres Views With Rails]]></title>
@@ -515,82 +621,6 @@ end
 <h3>Others?</h3>
 
 <p>This is just a short list. Feel fee to tweet me your other favorites <a href="https://twitter.com/RobertEshleman">@RobertEshleman</a> or comment below. =)</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Learning Rails via Error-Driven Development]]></title>
-    <link href="http://blog.roberteshleman.com/2014/07/09/learning-rails-via-error-driven-development/"/>
-    <updated>2014-07-09T13:10:52-04:00</updated>
-    <id>http://blog.roberteshleman.com/2014/07/09/learning-rails-via-error-driven-development</id>
-    <content type="html"><![CDATA[<p><em>This summer, I&rsquo;m learning Ruby on Rails at <a href="http://www.thisismetis.com">Metis</a>, a 12-week class taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;m learning.</em></p>
-
-<p>As we&rsquo;ve started learning Rails the past two weeks, one of our instructors, <a href="https://twitter.com/halogenandtoast">Goose</a>, has been encouraging us to code using an approach he calls <strong><a href="http://www.halogenandtoast.com/error-driven-development/">Error-Driven Development</a></strong>.</p>
-
-<p>Much like its older cousin, <strong><a href="http://en.wikipedia.org/wiki/Test-driven_development">Test-Driven Development</a></strong>, an error-driven approach follows a short, incremental, feedback-driven cycle when coding. As a new Rails developer, the habits built through Error-Driven Development will help prepare me to learn Test-Driven Development in the future.</p>
-
-<!-- More -->
-
-
-<h2>What is Error-Driven Development?</h2>
-
-<p>To develop a feature using Error-Driven Development, we first cause Rails to generate an error. Then, we make the simplest possible change to the code in order to resolve the error. This, in turn, will raise another error, and we can iterate by solving these incremental errors until our feature is complete.</p>
-
-<h2>An Example</h2>
-
-<p>At Metis, we&rsquo;ve been building a sample photo gallery app, so we&rsquo;ll walk through what Error-Driven Development might look like for getting our first page working with some boilerplate text.</p>
-
-<p>(These instructions are working from a vanilla Rails app generated with <code>rails new your-app-name-here</code>.)</p>
-
-<p>To start, we need to raise an error, so we&rsquo;ll navigate to the <code>/galleries</code> path (which will eventually be our first page) in the browser. Rails helpfully tells us:</p>
-
-<blockquote><p>Routing Error: No route matches [GET] &ldquo;/galleries&rdquo;</p></blockquote>
-
-<p>Of course, this seems silly, because we knew there was no route defined. But this message also tells us that we&rsquo;ve created the Rails project correctly and that the server is working.</p>
-
-<p>Now that we have an error, our next step is to make the smallest change to the code that fixes the error. We can do this by adding a single line to <code>config/routes.rb</code>:</p>
-
-<p><code>ruby
-resources :galleries, only: [:index]
-</code></p>
-
-<p>That&rsquo;s it. One line of code to fix this error. When we refresh the page, Rails says:</p>
-
-<blockquote><p>Routing Error: uninitialized constant GalleriesController</p></blockquote>
-
-<p>Great. We&rsquo;re making progress. To solve this error, we create the <code>app/controllers/galleries_controller.rb</code> file and add this code to define the controller:</p>
-
-<p><code>ruby
-class GalleriesController &lt; ApplicationController
-end
-</code></p>
-
-<p>Notice that we haven&rsquo;t yet defined any actions for this controller. After refreshing, Rails cheerfully greets us with:</p>
-
-<blockquote><p>Unknown action: The action &lsquo;index&rsquo; could not be found for GalleriesController</p></blockquote>
-
-<p>We correct this by defining the <code>index</code> action in the galleries controller:</p>
-
-<p><code>ruby
-def index
-end
-</code></p>
-
-<p>Refreshing again, we expect Rails to complain about a missing view. And we see (shortened for clarity):</p>
-
-<blockquote><p>Template is missing: Missing template galleries/index</p></blockquote>
-
-<p>So we create <code>app/views/galleries/index.html.erb</code> and add some boilerplate “Hello, world!” text to see that it&rsquo;s working. In the browser, we finally see:</p>
-
-<blockquote><p>Hello, world!</p></blockquote>
-
-<h2>Advantages and Reflections</h2>
-
-<p>One advantage of using this technique to learn Rails is that it makes apparent how Rails processes a request. For me, as a programmer who is new to Rails, this helps clarify a lot of the framework&rsquo;s conventions that aren&rsquo;t necessarily transparent (like which class names are pluralized, capitalized, etc.).</p>
-
-<p>Additionally, as I&rsquo;ve begun to get more comfortable with Rails, I can begin to anticipate what error I&rsquo;ll receive as I make each change to my code. If a different error appears, it&rsquo;s usually a sign that I made the wrong change or mistyped something. These mistakes are much easier to find when I&rsquo;ve only changed a few lines of code; had I made multiple changes at the same time, finding that error could take longer than coding did.</p>
-
-<p>In just a couple of weeks, using Error-Driven Development has completely changed the way I code. I&rsquo;m programming in a more logical, incremental way, and I&rsquo;m paying closer attention to my error messages. I can already see how learning Rails with an error-driven approach will provide a natural transition to using Test-Driven Development as I continue to grow as a developer.</p>
 ]]></content>
   </entry>
   

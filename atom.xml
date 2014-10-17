@@ -4,7 +4,7 @@
   <title><![CDATA[Robert Eshleman]]></title>
   <link href="http://blog.roberteshleman.com/atom.xml" rel="self"/>
   <link href="http://blog.roberteshleman.com/"/>
-  <updated>2014-09-17T22:48:42-04:00</updated>
+  <updated>2014-10-17T16:02:06-04:00</updated>
   <id>http://blog.roberteshleman.com/</id>
   <author>
     <name><![CDATA[Robert Eshleman]]></name>
@@ -12,6 +12,133 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Readable RSpec Tests With Helper Methods]]></title>
+    <link href="http://blog.roberteshleman.com/2014/10/17/readable-rspec-tests-with-helper-methods/"/>
+    <updated>2014-10-17T15:55:34-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/10/17/readable-rspec-tests-with-helper-methods</id>
+    <content type="html"><![CDATA[<p><em>I&rsquo;m a recent graduate of <a href="http://www.thisismetis.com">Metis</a>, a 12-week Ruby on Rails course taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;ve learned.</em></p>
+
+<p>I&rsquo;ve been spending a lot of time recently becoming familiar with <a href="http://rspec.info">Rspec</a>, <a href="http://jnicklas.github.io/capybara/">Capybara</a>, and <a href="http://en.wikipedia.org/wiki/Test-driven_development">TDD</a>. Because tests frequently have similar or repeated steps, this has also been a great opportunity to practice <a href="http://c2.com/cgi/wiki?DontRepeatYourself">DRY</a>-ing up my code.</p>
+
+<p>One particularly effective technique I&rsquo;ve been using often in my tests is extracting helper methods with descriptive names to make my code easier to read.</p>
+
+<!--More-->
+
+
+<h2>Setup and Exercise</h2>
+
+<p>In the setup and exercise <a href="http://robots.thoughtbot.com/four-phase-test">phase</a>s, code across tests may be very similar and ripe for extraction into a method. For example, here&rsquo;s a helper method in one of my feature specs for a user signing in:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">visit_sign_in_page</span>
+</span><span class='line'>  <span class="n">visit</span> <span class="n">root_path</span>
+</span><span class='line'>  <span class="n">click_link</span> <span class="s2">&quot;Sign in&quot;</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And another simple one that takes some parameters:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">user_signs_in_as</span><span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">fill_in</span> <span class="s2">&quot;Email&quot;</span><span class="p">,</span> <span class="ss">with</span><span class="p">:</span> <span class="n">email</span>
+</span><span class='line'>  <span class="n">fill_in</span> <span class="s2">&quot;Password&quot;</span><span class="p">,</span> <span class="ss">with</span><span class="p">:</span> <span class="n">password</span>
+</span><span class='line'>  <span class="n">click_button</span> <span class="s2">&quot;Sign in&quot;</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Verify</h2>
+
+<p>I&rsquo;ve found that the verification <a href="http://robots.thoughtbot.com/four-phase-test">phase</a> of my tests tend to see the most readability benefit from extracting methods.</p>
+
+<p>For example, this was some code that I used in a test verification recently:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">expect</span><span class="p">(</span><span class="n">page</span><span class="p">)</span><span class="o">.</span><span class="n">to</span> <span class="n">have_css</span><span class="p">(</span><span class="s2">&quot;.event&quot;</span><span class="p">,</span> <span class="ss">text</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This isn&rsquo;t too bad, but it becomes clearer when extracted into a helper method:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">have_event_summary</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">have_css</span><span class="p">(</span><span class="s2">&quot;.event&quot;</span><span class="p">,</span> <span class="ss">text</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The intent of this verification is obvious when I now write <code>expect(page).to have_event_summary(event)</code> or <code>expect(page).not_to have_event_summary(event)</code>.</p>
+
+<p>For more complex verifications, the expectation can also be included in the helper method, like so:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">expect_page_to_have_user_review_summary_for</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">within</span><span class="p">(</span><span class="s2">&quot;.review-score&quot;</span><span class="p">,</span> <span class="ss">text</span><span class="p">:</span> <span class="s2">&quot;Users&quot;</span><span class="p">)</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">expect</span><span class="p">(</span><span class="n">page</span><span class="p">)</span><span class="o">.</span><span class="n">to</span> <span class="n">have_text</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">average_user_review_score</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">expect</span><span class="p">(</span><span class="n">page</span><span class="p">)</span><span class="o">.</span><span class="n">to</span> <span class="n">have_text</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">#{</span><span class="n">event</span><span class="o">.</span><span class="n">num_user_reviews</span><span class="si">}</span><span class="s2"> Reviews&quot;</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The verification phase for most of my tests using this method simply reads <code>expct_page_to_have_user_review_summary_for(event)</code>. This is much nicer than multiple <code>have_css</code> or <code>have_text</code> expectations.</p>
+
+<p>As an additional bonus, RSpec will even provide clear failure messages if these assertions fail:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Failure</span><span class="o">/</span><span class="ss">Error</span><span class="p">:</span> <span class="n">expect_page_to_have_user_review_summary_for</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</span><span class='line'><span class="n">expected</span> <span class="n">to</span> <span class="n">find</span> <span class="n">text</span> <span class="s2">&quot;9.0&quot;</span> <span class="k">in</span> <span class="s2">&quot;No Review Here&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Reuse Across Files</h2>
+
+<p>Finally, RSpec allows these methods to be easily reused across spec files, if we so desire.</p>
+
+<p>All we have to do is wrap them up in a module like <code>EventSummaryHelpers</code> in <code>spec/support/</code>. Then, in <code>spec/rails_helper.rb</code>, simply tell RSpec to load that module:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">RSpec</span><span class="o">.</span><span class="n">configure</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+</span><span class='line'>  <span class="n">config</span><span class="o">.</span><span class="n">include</span> <span class="no">EventSummaryHelpers</span><span class="p">,</span> <span class="ss">type</span><span class="p">:</span> <span class="ss">:feature</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In this case, to save overhead, RSpec will only load these helpers when running feature specs.</p>
+
+<h2>Resources</h2>
+
+<ul>
+<li><a href="http://testdrivenwebsites.com/2011/08/17/different-ways-of-code-reuse-in-rspec/">Code Reuse in RSpec</a></li>
+<li><a href="http://robots.thoughtbot.com/four-phase-test">Four-Phase Tests</a></li>
+<li><a href="http://betterspecs.org">Writing Better Tests</a></li>
+<li><a href="http://rspec.info">RSpec</a></li>
+<li><a href="http://jnicklas.github.io/capybara/">Capybara</a></li>
+<li><a href="http://en.wikipedia.org/wiki/Test-driven_development">TDD</a></li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Using Postgres Views With Rails]]></title>

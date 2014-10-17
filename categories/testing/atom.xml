@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Testing | Robert Eshleman]]></title>
+  <link href="http://blog.roberteshleman.com/categories/testing/atom.xml" rel="self"/>
+  <link href="http://blog.roberteshleman.com/"/>
+  <updated>2014-10-17T16:02:06-04:00</updated>
+  <id>http://blog.roberteshleman.com/</id>
+  <author>
+    <name><![CDATA[Robert Eshleman]]></name>
+    <email><![CDATA[hello@roberteshleman.com]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Readable RSpec Tests With Helper Methods]]></title>
+    <link href="http://blog.roberteshleman.com/2014/10/17/readable-rspec-tests-with-helper-methods/"/>
+    <updated>2014-10-17T15:55:34-04:00</updated>
+    <id>http://blog.roberteshleman.com/2014/10/17/readable-rspec-tests-with-helper-methods</id>
+    <content type="html"><![CDATA[<p><em>I&rsquo;m a recent graduate of <a href="http://www.thisismetis.com">Metis</a>, a 12-week Ruby on Rails course taught by some great folks from <a href="http://www.thoughtbot.com">thoughtbot</a>. This post is part of a series sharing my experience and some of the things I&rsquo;ve learned.</em></p>
+
+<p>I&rsquo;ve been spending a lot of time recently becoming familiar with <a href="http://rspec.info">Rspec</a>, <a href="http://jnicklas.github.io/capybara/">Capybara</a>, and <a href="http://en.wikipedia.org/wiki/Test-driven_development">TDD</a>. Because tests frequently have similar or repeated steps, this has also been a great opportunity to practice <a href="http://c2.com/cgi/wiki?DontRepeatYourself">DRY</a>-ing up my code.</p>
+
+<p>One particularly effective technique I&rsquo;ve been using often in my tests is extracting helper methods with descriptive names to make my code easier to read.</p>
+
+<!--More-->
+
+
+<h2>Setup and Exercise</h2>
+
+<p>In the setup and exercise <a href="http://robots.thoughtbot.com/four-phase-test">phase</a>s, code across tests may be very similar and ripe for extraction into a method. For example, here&rsquo;s a helper method in one of my feature specs for a user signing in:</p>
+
+<p><code>ruby
+def visit_sign_in_page
+  visit root_path
+  click_link "Sign in"
+end
+</code></p>
+
+<p>And another simple one that takes some parameters:</p>
+
+<p><code>ruby
+def user_signs_in_as(email, password)
+  fill_in "Email", with: email
+  fill_in "Password", with: password
+  click_button "Sign in"
+end
+</code></p>
+
+<h2>Verify</h2>
+
+<p>I&rsquo;ve found that the verification <a href="http://robots.thoughtbot.com/four-phase-test">phase</a> of my tests tend to see the most readability benefit from extracting methods.</p>
+
+<p>For example, this was some code that I used in a test verification recently:</p>
+
+<p><code>ruby
+expect(page).to have_css(".event", text: event.name)
+</code></p>
+
+<p>This isn&rsquo;t too bad, but it becomes clearer when extracted into a helper method:</p>
+
+<p><code>ruby
+def have_event_summary(event)
+  have_css(".event", text: event.name)
+end
+</code></p>
+
+<p>The intent of this verification is obvious when I now write <code>expect(page).to have_event_summary(event)</code> or <code>expect(page).not_to have_event_summary(event)</code>.</p>
+
+<p>For more complex verifications, the expectation can also be included in the helper method, like so:</p>
+
+<p>```ruby
+def expect_page_to_have_user_review_summary_for(event)
+  within(&ldquo;.review-score&rdquo;, text: &ldquo;Users&rdquo;) do</p>
+
+<pre><code>expect(page).to have_text(event.average_user_review_score)
+expect(page).to have_text("#{event.num_user_reviews} Reviews")
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>The verification phase for most of my tests using this method simply reads <code>expct_page_to_have_user_review_summary_for(event)</code>. This is much nicer than multiple <code>have_css</code> or <code>have_text</code> expectations.</p>
+
+<p>As an additional bonus, RSpec will even provide clear failure messages if these assertions fail:</p>
+
+<p><code>
+Failure/Error: expect_page_to_have_user_review_summary_for(event)
+expected to find text "9.0" in "No Review Here"
+</code></p>
+
+<h2>Reuse Across Files</h2>
+
+<p>Finally, RSpec allows these methods to be easily reused across spec files, if we so desire.</p>
+
+<p>All we have to do is wrap them up in a module like <code>EventSummaryHelpers</code> in <code>spec/support/</code>. Then, in <code>spec/rails_helper.rb</code>, simply tell RSpec to load that module:</p>
+
+<p><code>ruby
+RSpec.configure do |config|
+  config.include EventSummaryHelpers, type: :feature
+end
+</code></p>
+
+<p>In this case, to save overhead, RSpec will only load these helpers when running feature specs.</p>
+
+<h2>Resources</h2>
+
+<ul>
+<li><a href="http://testdrivenwebsites.com/2011/08/17/different-ways-of-code-reuse-in-rspec/">Code Reuse in RSpec</a></li>
+<li><a href="http://robots.thoughtbot.com/four-phase-test">Four-Phase Tests</a></li>
+<li><a href="http://betterspecs.org">Writing Better Tests</a></li>
+<li><a href="http://rspec.info">RSpec</a></li>
+<li><a href="http://jnicklas.github.io/capybara/">Capybara</a></li>
+<li><a href="http://en.wikipedia.org/wiki/Test-driven_development">TDD</a></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>
