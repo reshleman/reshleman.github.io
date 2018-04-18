@@ -3,6 +3,7 @@ layout: post
 title: "Readable RSpec Tests with Helper Methods"
 date: 2014-10-17 15:55:34 -0400
 comments: true
+redirect_to: https://roberteshleman.com/blog/2014/10/17/readable-rspec-tests-with-helper-methods/
 categories: ["Ruby", "TDD", "Rails", "Testing", "RSpec", "Capybara", "Refactoring"]
 ---
 

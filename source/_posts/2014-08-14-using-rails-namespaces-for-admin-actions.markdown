@@ -4,6 +4,7 @@ title: "Using Rails Namespaces for Admin Actions"
 date: 2014-08-14 17:17:56 -0400
 comments: true
 redirect_from: /blog/2014/08/14/using-rails-namespaces-for-admin-actions/
+redirect_to: https://roberteshleman.com/blog/2014/08/14/using-rails-namespaces-for-admin-actions/
 categories: ["Rails", "Ruby", "Tech", "How-to"]
 ---
 

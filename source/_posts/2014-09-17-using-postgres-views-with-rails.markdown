@@ -3,6 +3,7 @@ layout: post
 title: "Using Postgres Views with Rails"
 date: 2014-09-17 22:17:00 -0400
 comments: true
+redirect_to: https://roberteshleman.com/blog/2014/09/18/using-postgres-views-with-rails/
 categories: ["Tech", "Ruby", "Rails", "Postgres", "PostgreSQL", "Database", "SQL", "View"]
 ---
 

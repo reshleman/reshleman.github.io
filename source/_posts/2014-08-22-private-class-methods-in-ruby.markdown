@@ -3,6 +3,7 @@ layout: post
 title: "Private Class Methods in Ruby"
 date: 2014-08-22 11:17:04 -0400
 comments: true
+redirect_to: https://roberteshleman.com/blog/2014/08/22/private-class-methods-in-ruby/
 categories: ["Ruby", "OO", "Object-Oriented", "Tips"]
 ---
 

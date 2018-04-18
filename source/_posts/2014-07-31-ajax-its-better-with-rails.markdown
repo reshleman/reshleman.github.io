@@ -4,6 +4,7 @@ title: "AJAX: It's Better with Rails"
 date: 2014-07-31 15:59:11 -0400
 comments: true
 redirect_from: /blog/2014/07/31/ajax-its-better-with-rails/
+redirect_to: https://roberteshleman.com/blog/2014/07/31/ajax-its-better-with-rails/
 categories: ["AJAX", "Rails", "JavaScript", "Metis", "Tech", "jQuery"]
 ---
 
